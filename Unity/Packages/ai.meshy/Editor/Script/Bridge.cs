@@ -181,7 +181,7 @@ public class MeshyBridge : MonoBehaviour
 
     void RunServer()
     {
-        listener = new TcpListener(IPAddress.Any, 5324);
+        listener = new TcpListener(IPAddress.Any, 5326);
         listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); // 添加套接字重用选项
         listener.Start();
 
@@ -189,7 +189,7 @@ public class MeshyBridge : MonoBehaviour
         guardThread.IsBackground = true;
         guardThread.Start();
 
-        Debug.Log("[Meshy Bridge] Listening on port 5324");
+        Debug.Log("[Meshy Bridge] Listening on port 5326");
 
         while (!_serverStop)
         {
