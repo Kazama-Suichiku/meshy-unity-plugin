@@ -393,7 +393,7 @@ namespace Meshy
                 border = new RectOffset(1, 1, 1, 1),  // 最小化边框
                 alignment = TextAnchor.MiddleCenter  // 确保文本居中
             };
-            selectedTab = GUILayout.Toolbar(selectedTab, new string[] { "Meshy Login", "Assets Browser", "My Assets", "Text To Model", "Text To Texture" }, toolbarStyle);
+            selectedTab = GUILayout.Toolbar(selectedTab, new string[] { "Meshy Login", "Assets Browser", "My Assets" }, toolbarStyle);
             EditorGUILayout.Space(25);
             // 内容区域开始
             EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
@@ -430,26 +430,7 @@ namespace Meshy
                         EditorGUILayout.HelpBox("Please login first to access your assets.", MessageType.Info);
                     }
                     break;
-                case 3:
-                    if (!string.IsNullOrEmpty(userTier))
-                    {
-                        TextToModelWindows.DrawGUI();
-                    }
-                    else
-                    {
-                        EditorGUILayout.HelpBox("Please login first to access the Text To Model.", MessageType.Info);
-                    }
-                    break;
-                case 4:
-                    if (!string.IsNullOrEmpty(userTier))
-                    {
-                        TextToTextureWindows.DrawGUI();
-                    }
-                    else
-                    {
-                        EditorGUILayout.HelpBox("Please login first to access the Text To Texture.", MessageType.Info);
-                    }
-                    break;
+                
             }
             EditorGUILayout.EndVertical();
         }
