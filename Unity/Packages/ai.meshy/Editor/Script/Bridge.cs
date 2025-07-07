@@ -27,11 +27,9 @@ public class MeshyBridgeWindow : EditorWindow
 
     private void OnEnable()
     {
-        // ³õÊ¼»¯°´Å¥ÄÚÈİ
         runButtonContent = new GUIContent("Run Bridge");
         stopButtonContent = new GUIContent("Bridge ON");
 
-        // ¼ì²éÇÅ½ÓÊµÀıÊÇ·ñ´æÔÚ
         isBridgeRunning = bridgeInstance != null;
     }
 
@@ -40,27 +38,23 @@ public class MeshyBridgeWindow : EditorWindow
         EditorGUILayout.BeginVertical();
         GUILayout.Space(10);
 
-        // ´´½¨Ò»¸ö×Ô¶¨ÒåÑùÊ½
         GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
         buttonStyle.fontSize = 14;
         buttonStyle.fontStyle = FontStyle.Bold;
         buttonStyle.fixedHeight = 40;
 
-        // ¸ù¾İÇÅ½Ó×´Ì¬ÉèÖÃ°´Å¥ÑÕÉ«
         Color originalColor = GUI.backgroundColor;
         if (isBridgeRunning)
         {
-            GUI.backgroundColor = new Color(0.4f, 0.6f, 1.0f); // À¶É«±íÊ¾ÔËĞĞÖĞ
+            GUI.backgroundColor = new Color(0.4f, 0.6f, 1.0f);
         }
 
-        // ÏÔÊ¾×´Ì¬ÇĞ»»°´Å¥
         GUIContent currentContent = isBridgeRunning ? stopButtonContent : runButtonContent;
         if (GUILayout.Button(currentContent, buttonStyle))
         {
             ToggleBridgeState();
         }
 
-        // »Ö¸´Ô­Ê¼ÑÕÉ«
         GUI.backgroundColor = originalColor;
 
         EditorGUILayout.EndVertical();
@@ -101,14 +95,11 @@ public class MeshyBridgeWindow : EditorWindow
         }
     }
 
-    // È·±£´°¿Ú¹Ø±ÕÊ±²»»áÓ°ÏìÇÅ½Ó×´Ì¬
     private void OnDestroy()
     {
-        // ´°¿Ú¹Ø±ÕÊ±²»Í£Ö¹ÇÅ½Ó
     }
 }
 
-// ±£ÁôÔ­ÓĞµÄ²Ëµ¥Ïî£¬µ«½«ËüÃÇÉèÎªË½ÓĞ
 public static class MeshyBridgeCommands
 {
     private static void StartBridge()
@@ -123,7 +114,6 @@ public static class MeshyBridgeCommands
 [ExecuteInEditMode]
 public class MeshyBridge : MonoBehaviour
 {
-    // Ìí¼Ó»º´æÂ·¾¶×Ö¶Î
     private string _tempCachePath;
 
     private Thread serverThread;
@@ -138,13 +128,12 @@ public class MeshyBridge : MonoBehaviour
         public string file_format;
         public string path;
         public string name;
-        public int frameRate; // Ìí¼ÓÖ¡ÂÊ×Ö¶Î
+        public int frameRate;
     }
 
     void Start()
     {
-        Debug.Log("[Meshy Bridge] ¿ªÊ¼³õÊ¼»¯·şÎñÆ÷");
-        // ÔÚÖ÷Ïß³ÌÖĞÔ¤ÏÈ»ñÈ¡ÁÙÊ±Â·¾¶
+        Debug.Log("[Meshy Bridge] Starting");
         _tempCachePath = Application.temporaryCachePath;
         try
         {
@@ -152,13 +141,13 @@ public class MeshyBridge : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogError($"[Meshy Bridge] Æô¶¯Ê§°Ü: {e.Message}\n{e.StackTrace}");
+            Debug.LogError($"[Meshy Bridge] Error: {e.Message}\n{e.StackTrace}");
         }
     }
 
     public void StartServer()
     {
-        Debug.Log("[Meshy Bridge] ÕıÔÚÆô¶¯·şÎñÆ÷Ïß³Ì");
+        Debug.Log("[Meshy Bridge] Starting server");
         _serverStop = false;
         serverThread = new Thread(RunServer);
         serverThread.IsBackground = true;
@@ -182,7 +171,7 @@ public class MeshyBridge : MonoBehaviour
     void RunServer()
     {
         listener = new TcpListener(IPAddress.Any, 5326);
-        listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); // Ìí¼ÓÌ×½Ó×ÖÖØÓÃÑ¡Ïî
+        listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
         listener.Start();
 
         guardThread = new Thread(GuardJob);
@@ -234,28 +223,25 @@ public class MeshyBridge : MonoBehaviour
     {
         try
         {
-            Debug.Log("[Meshy Bridge] ¿ªÊ¼´¦Àí¿Í»§¶ËÇëÇó");
-            byte[] buffer = new byte[1024 * 16]; // Ôö´ó»º³åÇø
+            Debug.Log("[Meshy Bridge] Processing request");
+            byte[] buffer = new byte[1024 * 16];
             int bytesRead = stream.Read(buffer, 0, buffer.Length);
             string request = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-            Debug.Log($"[Meshy Bridge] ÊÕµ½ÇëÇóÊı¾İ({bytesRead}×Ö½Ú):\n{request}");
+            Debug.Log($"[Meshy Bridge] Received request ({bytesRead} bytes):\n{request}");
 
-            // ½âÎöÇëÇóÍ· - Ìí¼Ó´íÎó´¦Àí
             var requestLines = request.Split(new[] { "\r\n" }, StringSplitOptions.None);
 
-            // ¼ì²éÊÇ·ñÓĞ×ã¹»µÄÇëÇóĞĞ
             if (requestLines.Length == 0)
             {
-                Debug.LogWarning("[Meshy Bridge] ÇëÇóÎª¿Õ");
+                Debug.LogWarning("[Meshy Bridge] Empty request");
                 SendErrorResponse(stream, "Empty request");
                 return;
             }
 
-            // °²È«½âÎöÇëÇó·½·¨ºÍÂ·¾¶
             string[] requestParts = requestLines[0].Split(' ');
             if (requestParts.Length < 2)
             {
-                Debug.LogWarning("[Meshy Bridge] ÇëÇóĞĞ¸ñÊ½²»ÕıÈ·: " + requestLines[0]);
+                Debug.LogWarning("[Meshy Bridge] Invalid request format: " + requestLines[0]);
                 SendErrorResponse(stream, "Invalid request format");
                 return;
             }
@@ -264,45 +250,40 @@ public class MeshyBridge : MonoBehaviour
             string path = requestParts[1];
             string origin = GetHeaderValue(requestLines, "Origin");
 
-            // ´¦ÀíOPTIONSÔ¤¼ìÇëÇó
             if (method == "OPTIONS")
             {
                 SendOptionsResponse(stream, origin);
                 return;
             }
 
-            // ´¦ÀíGET×´Ì¬ÇëÇó
             if (method == "GET" && (path == "/status" || path == "/ping"))
             {
                 SendStatusResponse(stream, origin);
                 return;
             }
 
-            // ´¦ÀíPOSTµ¼ÈëÇëÇó
             if (method == "POST" && path == "/import")
             {
                 ProcessImportRequest(stream, request, origin);
                 return;
             }
 
-            // Î´ÖªÂ·¾¶
             SendNotFoundResponse(stream, origin);
         }
         catch (Exception e)
         {
-            Debug.LogError($"[Meshy Bridge] ÇëÇó´¦ÀíÒì³£: {e.GetType().Name} - {e.Message}\n{e.StackTrace}");
+            Debug.LogError($"[Meshy Bridge] Error processing request: {e.GetType().Name} - {e.Message}\n{e.StackTrace}");
             try
             {
                 SendErrorResponse(stream, e.Message);
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[Meshy Bridge] ·¢ËÍ´íÎóÏìÓ¦Ê±³ö´í: {ex.Message}");
+                Debug.LogError($"[Meshy Bridge] Failed to send error response: {ex.Message}");
             }
         }
     }
 
-    // Ìí¼ÓÏìÓ¦Êı¾İ½á¹¹
     [System.Serializable]
     private class ImportResponseData
     {
@@ -313,83 +294,89 @@ public class MeshyBridge : MonoBehaviour
 
     private void ProcessImportRequest(NetworkStream stream, string request, string origin)
     {
-
-
-
         try
         {
-            // ÌáÈ¡JSONÕıÎÄ
             int jsonStart = request.IndexOf('{');
             if (jsonStart < 0)
             {
-                Debug.LogWarning("[Meshy Bridge] ÎŞ·¨ÕÒµ½JSON¿ªÊ¼±ê¼Ç");
+                Debug.LogWarning("[Meshy Bridge] Missing JSON");
                 throw new Exception("Invalid request format: JSON not found");
             }
 
             string jsonBody = request.Substring(jsonStart);
-            // ÑéÖ¤ÊÇ·ñÊÇÓĞĞ§JSON
             if (!jsonBody.Trim().StartsWith("{") || !jsonBody.Trim().EndsWith("}"))
             {
-                Debug.LogError("ÎŞĞ§µÄJSON¸ñÊ½");
+                Debug.LogError("Invalid JSON format");
                 throw new Exception("Invalid JSON format");
             }
-            Debug.Log($"[Meshy Bridge] ½âÎöJSON: {jsonBody}");
+            Debug.Log($"[Meshy Bridge] JSON: {jsonBody}");
 
-            // ĞŞ¸ÄÎªÊ¹ÓÃ×Ô¶¨ÒåÀà½âÎöJSON
             var data = JsonUtility.FromJson<ImportRequestData>(jsonBody);
-            if (data == null)
-            {
-                Debug.LogWarning("[Meshy Bridge] JSON½âÎöÊ§°Ü");
-                throw new Exception("Failed to parse JSON data");
-            }
 
-            if (string.IsNullOrEmpty(data.url))
-            {
-                Debug.LogWarning("[Meshy Bridge] URLÎª¿Õ");
-                throw new Exception("Missing required field: url");
-            }
-
-            if (string.IsNullOrEmpty(data.format))
-            {
-                Debug.LogWarning("[Meshy Bridge] ¸ñÊ½Îª¿Õ,Ê¹ÓÃÄ¬ÈÏÖµglb");
-                data.format = "glb";
-            }
-
-            // ĞŞÕıÁÙÊ±ÎÄ¼şÂ·¾¶
-            string fileName = $"bridge_model";
+            string fileName = $"bridge_model_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}_{Guid.NewGuid().ToString("N")[..8]}";
             string filePath = Path.Combine(Path.GetTempPath(), "Meshy", fileName);
 
-            // È·±£Ä¿Â¼´æÔÚ
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
 
-            Debug.Log($"[Meshy Bridge] ¿ªÊ¼ÏÂÔØÎÄ¼ş: {data.url}");
+            // ç¡®ä¿æ–‡ä»¶ä¸å­˜åœ¨
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+                Debug.Log($"[Meshy Bridge] Deleted existing file: {filePath}");
+            }
+
+            Debug.Log($"[Meshy Bridge] Downloading: {data.url}");
             using (var client = new WebClient())
             {
                 client.DownloadFile(data.url, filePath);
             }
-            // ¶ÁÈ¡ÎÄ¼şÍ·ÅĞ¶ÏÎÄ¼şÀàĞÍ
-            string fileExtension = ".glb"; // Ä¬ÈÏglb
+
+            string fileExtension = ".glb";
             byte[] header = new byte[4];
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
-                fs.Read(header, 0, 4);
-                if (header[0] == 'P' && header[1] == 'K' && header[2] == 0x03 && header[3] == 0x04)
+                int bytesRead = fs.Read(header, 0, header.Length);
+                
+                // æ ¹æ®JSONä¸­å£°æ˜çš„formatæ¥å†³å®šæ£€æµ‹é€»è¾‘
+                if (data.format.ToLower() == "glb")
                 {
-                    fileExtension = ".zip";
+                    // GLBæ ¼å¼ï¼šæ£€æŸ¥æ˜¯å¦ä¸ºZIPæˆ–GLB
+                    if (header[0] == 'P' && header[1] == 'K' && header[2] == 0x03 && header[3] == 0x04)
+                    {
+                        fileExtension = ".zip";
+                    }
+                    else if (header[0] == 'g' && header[1] == 'l' && header[2] == 'T' && header[3] == 'F')
+                    {
+                        fileExtension = ".glb";
+                    }
                 }
-                else if (header[0] == 'g' && header[1] == 'l' && header[2] == 'T' && header[3] == 'F')
+                else if (data.format.ToLower() == "fbx")
                 {
-                    fileExtension = ".glb";
+                    // FBXæ ¼å¼ï¼šæ£€æŸ¥æ˜¯å¦ä¸ºZIPæˆ–FBX
+                    if (header[0] == 'P' && header[1] == 'K' && header[2] == 0x03 && header[3] == 0x04)
+                    {
+                        fileExtension = ".zip";
+                    }
+                    else
+                    {
+                        fileExtension = ".fbx";
+                    }
                 }
             }
 
-            // ÖØÃüÃûÎÄ¼şÌí¼ÓÕıÈ·À©Õ¹Ãû
             string finalPath = filePath + fileExtension;
+
+            // ç¡®ä¿ç›®æ ‡æ–‡ä»¶ä¸å­˜åœ¨
+            if (File.Exists(finalPath))
+            {
+                File.Delete(finalPath);
+                Debug.Log($"[Meshy Bridge] Deleted existing target file: {finalPath}");
+            }
+
             File.Move(filePath, finalPath);
             filePath = finalPath;
-            Debug.Log($"[Meshy Bridge] ÎÄ¼şÏÂÔØÍê³É: {filePath}");
+            Debug.Log($"[Meshy Bridge] File saved: {filePath}");
 
-            // ¼ÓÈëµ¼Èë¶ÓÁĞ
             lock (importQueue)
             {
                 importQueue.Enqueue(new MeshTransfer
@@ -401,7 +388,6 @@ public class MeshyBridge : MonoBehaviour
                 });
             }
 
-            // ·¢ËÍ³É¹¦ÏìÓ¦
             var responseData = new ImportResponseData
             {
                 status = "ok",
@@ -423,23 +409,22 @@ public class MeshyBridge : MonoBehaviour
             byte[] responseBytes = Encoding.UTF8.GetBytes(response);
             stream.Write(responseBytes, 0, responseBytes.Length);
             stream.Flush();
-            Debug.Log("[Meshy Bridge] µ¼ÈëÇëÇó´¦Àí³É¹¦");
+            Debug.Log("[Meshy Bridge] Response sent");
         }
         catch (Exception e)
         {
-            Debug.LogError($"[Meshy Bridge] ´¦Àíµ¼ÈëÇëÇóÊ§°Ü: {e.Message}");
+            Debug.LogError($"[Meshy Bridge] Error processing import request: {e.Message}");
             SendErrorResponse(stream, e.Message);
         }
     }
 
-    // Ìí¼ÓÇëÇóÊı¾İ½á¹¹
     [System.Serializable]
     private class ImportRequestData
     {
         public string url;
         public string format;
         public string name;
-        public int frameRate = 30; // Ä¬ÈÏ30Ö¡
+        public int frameRate = 30;
     }
 
     private string GetAllowedOrigin(string origin)
@@ -468,7 +453,6 @@ public class MeshyBridge : MonoBehaviour
 
     private void SendStatusResponse(NetworkStream stream, string origin)
     {
-        // ´´½¨ÏìÓ¦Êı¾İ¶ÔÏó
         var responseData = new StatusResponseData
         {
             dcc = "unity",
@@ -476,10 +460,8 @@ public class MeshyBridge : MonoBehaviour
             version = Application.unityVersion
         };
 
-        // ×ª»»ÎªJSON
         string jsonResponse = JsonUtility.ToJson(responseData);
 
-        // ¹¹½¨ÍêÕûHTTPÏìÓ¦
         string response = string.Join("\r\n",
             "HTTP/1.1 200 OK",
             $"Access-Control-Allow-Origin: {GetAllowedOrigin(origin)}",
@@ -489,13 +471,11 @@ public class MeshyBridge : MonoBehaviour
             "",
             jsonResponse);
 
-        // ·¢ËÍÏìÓ¦
         byte[] responseBytes = Encoding.UTF8.GetBytes(response);
         stream.Write(responseBytes, 0, responseBytes.Length);
         stream.Flush();
 
-        Debug.Log($"[Meshy Bridge] ·¢ËÍ×´Ì¬ÏìÓ¦: {jsonResponse}");
-
+        Debug.Log($"[Meshy Bridge] Status response sent: {jsonResponse}");
     }
 
     private void SendNotFoundResponse(NetworkStream stream, string origin)
@@ -527,7 +507,7 @@ public class MeshyBridge : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogError($"·¢ËÍ´íÎóÏìÓ¦Ê§°Ü: {e.Message}");
+            Debug.LogError($"[Meshy Bridge] Failed to send error response: {e.Message}");
         }
     }
 
@@ -543,7 +523,6 @@ public class MeshyBridge : MonoBehaviour
 
     void Update()
     {
-        // ´¦Àíµ¼Èë¶ÓÁĞ
         lock (importQueue)
         {
             while (importQueue.Count > 0)
@@ -567,11 +546,14 @@ public class MeshyBridge : MonoBehaviour
                 case ".zip":
                     ProcessZipFile(transfer);
                     break;
+                case ".fbx":
+                    ImportFBXWithTextures(transfer);
+                    break;
             }
         }
         catch (Exception e)
         {
-            Debug.LogError($"Error processing mesh: {e.Message}");
+            Debug.LogError($"[Meshy Bridge] Error processing mesh: {e.Message}");
         }
         finally
         {
@@ -583,7 +565,6 @@ public class MeshyBridge : MonoBehaviour
     {
         try
         {
-            // È·±£Ä¿±êÄ¿Â¼´æÔÚ
             string importDir = "Assets/MeshyImports";
             if (!Directory.Exists(importDir))
             {
@@ -591,78 +572,62 @@ public class MeshyBridge : MonoBehaviour
                 AssetDatabase.Refresh();
             }
 
-            // Éú³É¸üÓĞÒâÒåµÄÎÄ¼şÃû
             string modelName = string.IsNullOrEmpty(transfer.name) ? "Meshy_Model" : transfer.name;
-            // ÇåÀíÎÄ¼şÃûÖĞµÄ·Ç·¨×Ö·û
             modelName = string.Join("_", modelName.Split(Path.GetInvalidFileNameChars()));
 
-            // »ñÈ¡ÎÄ¼şÀ©Õ¹Ãû
             string extension = Path.GetExtension(transfer.path);
             if (string.IsNullOrEmpty(extension))
             {
                 extension = $".{transfer.file_format}";
             }
 
-            // ´´½¨Î¨Ò»ÎÄ¼şÃû
             string uniqueFileName = $"{modelName}_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}{extension}";
             string relativePath = Path.Combine(importDir, uniqueFileName);
 
-            // ¼ì²éÔ´ÎÄ¼şÊÇ·ñ´æÔÚ
             if (!File.Exists(transfer.path))
             {
-                Debug.LogError($"Ô´ÎÄ¼ş²»´æÔÚ: {transfer.path}");
+                Debug.LogError($"[Meshy Bridge] Source file not found: {transfer.path}");
                 return;
             }
 
-            // ÏÈ¸´ÖÆÎÄ¼şµ½Ä¿±êÎ»ÖÃ
             File.Copy(transfer.path, relativePath, true);
 
             AssetDatabase.ForceReserializeAssets(new[] { relativePath });
 
-            // µ¼ÈëÄ£ĞÍ
             AssetDatabase.ImportAsset(relativePath, ImportAssetOptions.ForceUpdate);
 
-            // »ñÈ¡µ¼ÈëµÄÄ£ĞÍ
             GameObject importedObject = AssetDatabase.LoadAssetAtPath<GameObject>(relativePath);
             if (importedObject != null)
             {
-                // Ê¹ÓÃ´«ÈëµÄÃû³Æ»òÉú³ÉµÄÃû³Æ
                 importedObject.name = uniqueFileName;
 
-                // Ìí¼ÓÄ¬ÈÏ²ÄÖÊ
                 AddDefaultMaterial(importedObject);
 
-                // È·±£ĞŞ¸Ä±£´æ
                 EditorUtility.SetDirty(importedObject);
                 AssetDatabase.SaveAssets();
 
-                // ÔÚÖ÷Ïß³ÌÖĞÊµÀı»¯Ä£ĞÍµ½³¡¾°
                 EditorApplication.delayCall += () =>
                 {
-                    // ÊµÀı»¯Ä£ĞÍµ½³¡¾°
                     GameObject sceneObject = PrefabUtility.InstantiatePrefab(importedObject) as GameObject;
                     if (sceneObject != null)
                     {
-                        // ÖØÖÃ±ä»»
                         sceneObject.transform.position = Vector3.zero;
                         sceneObject.transform.rotation = Quaternion.identity;
                         sceneObject.transform.localScale = Vector3.one;
 
-                        // Ñ¡ÖĞĞÂÌí¼ÓµÄ¶ÔÏó
                         Selection.activeGameObject = sceneObject;
 
-                        // È·±£³¡¾°±»±ê¼ÇÎªÒÑĞŞ¸Ä
                         EditorSceneManager.MarkSceneDirty(sceneObject.scene);
 
-                        Debug.Log($"[Meshy Bridge] Ä£ĞÍÒÑÌí¼Óµ½³¡¾°: {sceneObject.name}");
+                        Debug.Log($"[Meshy Bridge] Model successfully added to scene: {sceneObject.name}");
                     }
                 };
             }
-            Debug.Log($"[Meshy Bridge] µ¼ÈëÄ£ĞÍ³É¹¦: {relativePath}, Ãû³Æ: {uniqueFileName}");
+            Debug.Log($"[Meshy Bridge] Model imported successfully: {relativePath}, Name: {uniqueFileName}");
         }
         catch (Exception e)
         {
-            Debug.LogError($"[Meshy Bridge] µ¼ÈëÄ£ĞÍÊ§°Ü: {e.Message}\n{e.StackTrace}");
+            Debug.LogError($"[Meshy Bridge] Model import failed: {e.Message}\n{e.StackTrace}");
         }
     }
 
@@ -679,11 +644,10 @@ public class MeshyBridge : MonoBehaviour
 
     private void ProcessZipFile(MeshTransfer transfer)
     {
-        // ĞŞ¸ÄÎªÊ¹ÓÃÔ¤ÏÈ»ñÈ¡µÄÁÙÊ±Â·¾¶
         string extractPath = Path.Combine(_tempCachePath, "extracted");
         ZipFile.ExtractToDirectory(transfer.path, extractPath);
 
-        // ´¦Àí½âÑ¹ºóµÄÎÄ¼ş
+        // å¤„ç†GLBæ–‡ä»¶
         foreach (string file in Directory.GetFiles(extractPath, "*.glb", SearchOption.AllDirectories))
         {
             MeshTransfer newTransfer = new MeshTransfer
@@ -695,8 +659,249 @@ public class MeshyBridge : MonoBehaviour
             ImportModelWithMaterial(newTransfer);
         }
 
-        // ÇåÀíÁÙÊ±Ä¿Â¼
+        // å¤„ç†FBXæ–‡ä»¶ - ä½¿ç”¨ä¸“é—¨çš„FBXå¯¼å…¥å‡½æ•°
+        foreach (string file in Directory.GetFiles(extractPath, "*.fbx", SearchOption.AllDirectories))
+        {
+            MeshTransfer newTransfer = new MeshTransfer
+            {
+                file_format = "fbx",
+                path = file,
+                name = transfer.name
+            };
+            ImportFBXWithTextures(newTransfer);
+        }
+
         Directory.Delete(extractPath, true);
+    }
+
+    private void ImportFBXWithTextures(MeshTransfer transfer)
+    {
+        try
+        {
+            string importDir = "Assets/MeshyImports";
+            if (!Directory.Exists(importDir))
+            {
+                Directory.CreateDirectory(importDir);
+                AssetDatabase.Refresh();
+            }
+
+            string modelName = string.IsNullOrEmpty(transfer.name) ? "Meshy_Model" : transfer.name;
+            modelName = string.Join("_", modelName.Split(Path.GetInvalidFileNameChars()));
+
+            // Create dedicated folder for each FBX model
+            string modelFolderName = $"{modelName}_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}";
+            string modelDir = Path.Combine(importDir, modelFolderName);
+            Directory.CreateDirectory(modelDir);
+
+            // Copy FBX file
+            string fbxFileName = Path.GetFileName(transfer.path);
+            string fbxRelativePath = Path.Combine(modelDir, fbxFileName);
+            
+            if (!File.Exists(transfer.path))
+            {
+                Debug.LogError($"[Meshy Bridge] Source FBX file not found: {transfer.path}");
+                return;
+            }
+
+            File.Copy(transfer.path, fbxRelativePath, true);
+
+            // Find and copy texture files
+            string sourceDir = Path.GetDirectoryName(transfer.path);
+            ImportTextureFiles(sourceDir, modelDir);
+
+            // Refresh asset database
+            AssetDatabase.Refresh();
+
+            // Import FBX file
+            AssetDatabase.ImportAsset(fbxRelativePath, ImportAssetOptions.ForceUpdate);
+
+            // Get imported FBX object
+            GameObject importedObject = AssetDatabase.LoadAssetAtPath<GameObject>(fbxRelativePath);
+            if (importedObject != null)
+            {
+                importedObject.name = modelName;
+
+                // Check and fix material texture references
+                FixMaterialTextureReferences(importedObject, modelDir);
+
+                EditorUtility.SetDirty(importedObject);
+                AssetDatabase.SaveAssets();
+
+                // Instantiate in scene
+                EditorApplication.delayCall += () =>
+                {
+                    GameObject sceneObject = PrefabUtility.InstantiatePrefab(importedObject) as GameObject;
+                    if (sceneObject != null)
+                    {
+                        sceneObject.transform.position = Vector3.zero;
+                        sceneObject.transform.rotation = Quaternion.identity;
+                        sceneObject.transform.localScale = Vector3.one;
+
+                        Selection.activeGameObject = sceneObject;
+                        EditorSceneManager.MarkSceneDirty(sceneObject.scene);
+
+                        Debug.Log($"[Meshy Bridge] FBX model successfully added to scene: {sceneObject.name}");
+                    }
+                };
+            }
+            
+            Debug.Log($"[Meshy Bridge] FBX model imported successfully: {fbxRelativePath}");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[Meshy Bridge] FBX import failed: {e.Message}\n{e.StackTrace}");
+        }
+    }
+
+    private void ImportTextureFiles(string sourceDir, string targetDir)
+    {
+        // Supported texture file extensions
+        string[] textureExtensions = { "*.jpg", "*.jpeg", "*.png", "*.tga", "*.bmp", "*.tiff", "*.tif", "*.exr", "*.hdr" };
+        
+        // Copy texture files from source directory
+        foreach (string pattern in textureExtensions)
+        {
+            string[] textureFiles = Directory.GetFiles(sourceDir, pattern, SearchOption.TopDirectoryOnly);
+            foreach (string textureFile in textureFiles)
+            {
+                string fileName = Path.GetFileName(textureFile);
+                string targetPath = Path.Combine(targetDir, fileName);
+                
+                File.Copy(textureFile, targetPath, true);
+                Debug.Log($"[Meshy Bridge] Copied texture file: {fileName}");
+            }
+        }
+
+        // Find and copy texture files in subdirectories (e.g., Textures folder)
+        string[] subDirectories = Directory.GetDirectories(sourceDir);
+        foreach (string subDir in subDirectories)
+        {
+            string subDirName = Path.GetFileName(subDir);
+            string targetSubDir = Path.Combine(targetDir, subDirName);
+            
+            // Create corresponding subdirectory
+            Directory.CreateDirectory(targetSubDir);
+            
+            // Copy texture files in subdirectory
+            foreach (string pattern in textureExtensions)
+            {
+                string[] textureFiles = Directory.GetFiles(subDir, pattern, SearchOption.AllDirectories);
+                foreach (string textureFile in textureFiles)
+                {
+                    string relativePath = Path.GetRelativePath(subDir, textureFile);
+                    string targetPath = Path.Combine(targetSubDir, relativePath);
+                    
+                    // Ensure target directory exists
+                    Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
+                    
+                    File.Copy(textureFile, targetPath, true);
+                    Debug.Log($"[Meshy Bridge] Copied subdirectory texture file: {subDirName}/{relativePath}");
+                }
+            }
+        }
+    }
+
+    private void FixMaterialTextureReferences(GameObject fbxObject, string modelDir)
+    {
+        // Get all Renderer components from FBX object
+        Renderer[] renderers = fbxObject.GetComponentsInChildren<Renderer>();
+        
+        foreach (Renderer renderer in renderers)
+        {
+            Material[] materials = renderer.sharedMaterials;
+            
+            for (int i = 0; i < materials.Length; i++)
+            {
+                Material material = materials[i];
+                if (material != null)
+                {
+                    // Check material's main texture
+                    if (material.mainTexture == null)
+                    {
+                        // Try to find corresponding texture based on material name
+                        string textureName = material.name;
+                        Texture2D foundTexture = FindTextureInDirectory(modelDir, textureName);
+                        
+                        if (foundTexture != null)
+                        {
+                            material.mainTexture = foundTexture;
+                            Debug.Log($"[Meshy Bridge] Set texture for material {material.name}: {foundTexture.name}");
+                        }
+                        else
+                        {
+                            // If no corresponding texture found, try to find the first available texture
+                            Texture2D firstTexture = FindFirstTextureInDirectory(modelDir);
+                            if (firstTexture != null)
+                            {
+                                material.mainTexture = firstTexture;
+                                Debug.Log($"[Meshy Bridge] Set default texture for material {material.name}: {firstTexture.name}");
+                            }
+                        }
+                    }
+                    
+                    // Check other common texture properties
+                    CheckAndAssignTexture(material, "_BumpMap", modelDir, "normal", "Normal");
+                    CheckAndAssignTexture(material, "_MetallicGlossMap", modelDir, "metallic", "Metallic");
+                    CheckAndAssignTexture(material, "_OcclusionMap", modelDir, "occlusion", "AO");
+                    CheckAndAssignTexture(material, "_EmissionMap", modelDir, "emission", "Emissive");
+                }
+            }
+        }
+    }
+
+    private void CheckAndAssignTexture(Material material, string propertyName, string modelDir, params string[] nameKeywords)
+    {
+        if (material.HasProperty(propertyName) && material.GetTexture(propertyName) == null)
+        {
+            foreach (string keyword in nameKeywords)
+            {
+                Texture2D texture = FindTextureInDirectory(modelDir, keyword);
+                if (texture != null)
+                {
+                    material.SetTexture(propertyName, texture);
+                    Debug.Log($"[Meshy Bridge] Set {propertyName} texture for material {material.name}: {texture.name}");
+                    break;
+                }
+            }
+        }
+    }
+
+    private Texture2D FindTextureInDirectory(string directory, string nameKeyword)
+    {
+        string[] textureExtensions = { "*.jpg", "*.jpeg", "*.png", "*.tga", "*.bmp", "*.tiff", "*.tif" };
+        
+        foreach (string pattern in textureExtensions)
+        {
+            string[] textureFiles = Directory.GetFiles(directory, pattern, SearchOption.AllDirectories);
+            foreach (string textureFile in textureFiles)
+            {
+                string fileName = Path.GetFileNameWithoutExtension(textureFile);
+                if (fileName.ToLower().Contains(nameKeyword.ToLower()))
+                {
+                    string relativePath = textureFile.Replace('\\', '/');
+                    return AssetDatabase.LoadAssetAtPath<Texture2D>(relativePath);
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    private Texture2D FindFirstTextureInDirectory(string directory)
+    {
+        string[] textureExtensions = { "*.jpg", "*.jpeg", "*.png", "*.tga", "*.bmp", "*.tiff", "*.tif" };
+        
+        foreach (string pattern in textureExtensions)
+        {
+            string[] textureFiles = Directory.GetFiles(directory, pattern, SearchOption.TopDirectoryOnly);
+            if (textureFiles.Length > 0)
+            {
+                string relativePath = textureFiles[0].Replace('\\', '/');
+                return AssetDatabase.LoadAssetAtPath<Texture2D>(relativePath);
+            }
+        }
+        
+        return null;
     }
 
     private void CleanupTempFile(string path)
