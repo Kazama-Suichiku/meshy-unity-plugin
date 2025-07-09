@@ -9,6 +9,8 @@ using System.IO;
 using System.Collections.Generic;
 using System.IO.Compression;
 using UnityEditor.SceneManagement;
+using System.Linq;  // 用于 OfType<AnimationClip>()
+using UnityEditor.Animations;  // 用于 AnimatorController
 
 public class MeshyBridgeWindow : EditorWindow
 {
@@ -592,9 +594,35 @@ public class MeshyBridge : MonoBehaviour
 
             File.Copy(transfer.path, relativePath, true);
 
-            AssetDatabase.ForceReserializeAssets(new[] { relativePath });
-
+            // 配置ModelImporter以正确导入多个动画
             AssetDatabase.ImportAsset(relativePath, ImportAssetOptions.ForceUpdate);
+            
+            // 获取ModelImporter并配置动画导入
+            ModelImporter importer = AssetImporter.GetAtPath(relativePath) as ModelImporter;
+            if (importer != null)
+            {
+                // 配置动画导入设置
+                importer.animationType = ModelImporterAnimationType.Generic;
+                importer.importAnimation = true;
+                
+                // 如果GLB包含多个动画，尝试提取所有clips
+                if (transfer.file_format.ToLower() == "glb")
+                {
+                    // 重新导入以应用设置
+                    importer.SaveAndReimport();
+                    
+                    // 检查是否有多个动画clips
+                    var clips = AssetDatabase.LoadAllAssetsAtPath(relativePath).OfType<AnimationClip>().ToArray();
+                    if (clips.Length > 1)
+                    {
+                        Debug.Log($"[Meshy Bridge] Found {clips.Length} animation clips in GLB file");
+                        foreach (var clip in clips)
+                        {
+                            Debug.Log($"[Meshy Bridge] Animation clip: {clip.name}");
+                        }
+                    }
+                }
+            }
 
             GameObject importedObject = AssetDatabase.LoadAssetAtPath<GameObject>(relativePath);
             if (importedObject != null)
@@ -615,8 +643,17 @@ public class MeshyBridge : MonoBehaviour
                         sceneObject.transform.rotation = Quaternion.identity;
                         sceneObject.transform.localScale = Vector3.one;
 
-                        Selection.activeGameObject = sceneObject;
+                        // 如果有动画组件，设置Animator
+                        var animator = sceneObject.GetComponent<Animator>();
+                        if (animator == null)
+                        {
+                            animator = sceneObject.AddComponent<Animator>();
+                        }
 
+                        // 创建AnimatorController以使用多个动画
+                        CreateAnimatorControllerForMultipleClips(sceneObject, relativePath);
+
+                        Selection.activeGameObject = sceneObject;
                         EditorSceneManager.MarkSceneDirty(sceneObject.scene);
 
                         Debug.Log($"[Meshy Bridge] Model successfully added to scene: {sceneObject.name}");
@@ -916,6 +953,42 @@ public class MeshyBridge : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogError($"Error cleaning up: {e.Message}");
+        }
+    }
+
+    // 将这个方法移到类内部
+    private void CreateAnimatorControllerForMultipleClips(GameObject sceneObject, string modelPath)
+    {
+        var clips = AssetDatabase.LoadAllAssetsAtPath(modelPath).OfType<AnimationClip>().ToArray();
+        if (clips.Length > 1)
+        {
+            // 创建AnimatorController来管理多个动画
+            string controllerPath = modelPath.Replace(Path.GetExtension(modelPath), "_Controller.controller");
+            
+            AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+            
+            // 为每个动画clip创建状态
+            for (int i = 0; i < clips.Length; i++)
+            {
+                var clip = clips[i];
+                var state = controller.layers[0].stateMachine.AddState(clip.name);
+                state.motion = clip;
+                
+                // 设置第一个动画为默认状态
+                if (i == 0)
+                {
+                    controller.layers[0].stateMachine.defaultState = state;
+                }
+            }
+            
+            // 应用controller到animator
+            var animator = sceneObject.GetComponent<Animator>();
+            if (animator != null)
+            {
+                animator.runtimeAnimatorController = controller;
+            }
+            
+            Debug.Log($"[Meshy Bridge] Created AnimatorController with {clips.Length} animation clips");
         }
     }
 
