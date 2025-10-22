@@ -9,8 +9,8 @@ using System.IO;
 using System.Collections.Generic;
 using System.IO.Compression;
 using UnityEditor.SceneManagement;
-using System.Linq;  // 用于 OfType<AnimationClip>()
-using UnityEditor.Animations;  // 用于 AnimatorController
+using System.Linq;
+using UnityEditor.Animations;
 
 public class MeshyBridgeWindow : EditorWindow
 {
@@ -320,7 +320,6 @@ public class MeshyBridge : MonoBehaviour
 
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
 
-            // 确保文件不存在
             if (File.Exists(filePath))
             {
                 File.Delete(filePath);
@@ -339,10 +338,8 @@ public class MeshyBridge : MonoBehaviour
             {
                 int bytesRead = fs.Read(header, 0, header.Length);
                 
-                // 根据JSON中声明的format来决定检测逻辑
                 if (data.format.ToLower() == "glb")
                 {
-                    // GLB格式：检查是否为ZIP或GLB
                     if (header[0] == 'P' && header[1] == 'K' && header[2] == 0x03 && header[3] == 0x04)
                     {
                         fileExtension = ".zip";
@@ -354,7 +351,6 @@ public class MeshyBridge : MonoBehaviour
                 }
                 else if (data.format.ToLower() == "fbx")
                 {
-                    // FBX格式：检查是否为ZIP或FBX
                     if (header[0] == 'P' && header[1] == 'K' && header[2] == 0x03 && header[3] == 0x04)
                     {
                         fileExtension = ".zip";
@@ -368,7 +364,6 @@ public class MeshyBridge : MonoBehaviour
 
             string finalPath = filePath + fileExtension;
 
-            // 确保目标文件不存在
             if (File.Exists(finalPath))
             {
                 File.Delete(finalPath);
@@ -594,24 +589,18 @@ public class MeshyBridge : MonoBehaviour
 
             File.Copy(transfer.path, relativePath, true);
 
-            // 配置ModelImporter以正确导入多个动画
             AssetDatabase.ImportAsset(relativePath, ImportAssetOptions.ForceUpdate);
             
-            // 获取ModelImporter并配置动画导入
             ModelImporter importer = AssetImporter.GetAtPath(relativePath) as ModelImporter;
             if (importer != null)
             {
-                // 配置动画导入设置
                 importer.animationType = ModelImporterAnimationType.Generic;
                 importer.importAnimation = true;
                 
-                // 如果GLB包含多个动画，尝试提取所有clips
                 if (transfer.file_format.ToLower() == "glb")
                 {
-                    // 重新导入以应用设置
                     importer.SaveAndReimport();
                     
-                    // 检查是否有多个动画clips
                     var clips = AssetDatabase.LoadAllAssetsAtPath(relativePath).OfType<AnimationClip>().ToArray();
                     if (clips.Length > 1)
                     {
@@ -643,14 +632,12 @@ public class MeshyBridge : MonoBehaviour
                         sceneObject.transform.rotation = Quaternion.identity;
                         sceneObject.transform.localScale = Vector3.one;
 
-                        // 如果有动画组件，设置Animator
                         var animator = sceneObject.GetComponent<Animator>();
                         if (animator == null)
                         {
                             animator = sceneObject.AddComponent<Animator>();
                         }
 
-                        // 创建AnimatorController以使用多个动画
                         CreateAnimatorControllerForMultipleClips(sceneObject, relativePath);
 
                         Selection.activeGameObject = sceneObject;
@@ -684,7 +671,6 @@ public class MeshyBridge : MonoBehaviour
         string extractPath = Path.Combine(_tempCachePath, "extracted");
         ZipFile.ExtractToDirectory(transfer.path, extractPath);
 
-        // 处理GLB文件
         foreach (string file in Directory.GetFiles(extractPath, "*.glb", SearchOption.AllDirectories))
         {
             MeshTransfer newTransfer = new MeshTransfer
@@ -696,7 +682,6 @@ public class MeshyBridge : MonoBehaviour
             ImportModelWithMaterial(newTransfer);
         }
 
-        // 处理FBX文件 - 使用专门的FBX导入函数
         foreach (string file in Directory.GetFiles(extractPath, "*.fbx", SearchOption.AllDirectories))
         {
             MeshTransfer newTransfer = new MeshTransfer
@@ -725,12 +710,10 @@ public class MeshyBridge : MonoBehaviour
             string modelName = string.IsNullOrEmpty(transfer.name) ? "Meshy_Model" : transfer.name;
             modelName = string.Join("_", modelName.Split(Path.GetInvalidFileNameChars()));
 
-            // Create dedicated folder for each FBX model
             string modelFolderName = $"{modelName}_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}";
             string modelDir = Path.Combine(importDir, modelFolderName);
             Directory.CreateDirectory(modelDir);
 
-            // Copy FBX file
             string fbxFileName = Path.GetFileName(transfer.path);
             string fbxRelativePath = Path.Combine(modelDir, fbxFileName);
             
@@ -742,29 +725,23 @@ public class MeshyBridge : MonoBehaviour
 
             File.Copy(transfer.path, fbxRelativePath, true);
 
-            // Find and copy texture files
             string sourceDir = Path.GetDirectoryName(transfer.path);
             ImportTextureFiles(sourceDir, modelDir);
 
-            // Refresh asset database
             AssetDatabase.Refresh();
 
-            // Import FBX file
             AssetDatabase.ImportAsset(fbxRelativePath, ImportAssetOptions.ForceUpdate);
 
-            // Get imported FBX object
             GameObject importedObject = AssetDatabase.LoadAssetAtPath<GameObject>(fbxRelativePath);
             if (importedObject != null)
             {
                 importedObject.name = modelName;
 
-                // Check and fix material texture references
                 FixMaterialTextureReferences(importedObject, modelDir);
 
                 EditorUtility.SetDirty(importedObject);
                 AssetDatabase.SaveAssets();
 
-                // Instantiate in scene
                 EditorApplication.delayCall += () =>
                 {
                     GameObject sceneObject = PrefabUtility.InstantiatePrefab(importedObject) as GameObject;
@@ -792,10 +769,8 @@ public class MeshyBridge : MonoBehaviour
 
     private void ImportTextureFiles(string sourceDir, string targetDir)
     {
-        // Supported texture file extensions
         string[] textureExtensions = { "*.jpg", "*.jpeg", "*.png", "*.tga", "*.bmp", "*.tiff", "*.tif", "*.exr", "*.hdr" };
         
-        // Copy texture files from source directory
         foreach (string pattern in textureExtensions)
         {
             string[] textureFiles = Directory.GetFiles(sourceDir, pattern, SearchOption.TopDirectoryOnly);
@@ -809,17 +784,14 @@ public class MeshyBridge : MonoBehaviour
             }
         }
 
-        // Find and copy texture files in subdirectories (e.g., Textures folder)
         string[] subDirectories = Directory.GetDirectories(sourceDir);
         foreach (string subDir in subDirectories)
         {
             string subDirName = Path.GetFileName(subDir);
             string targetSubDir = Path.Combine(targetDir, subDirName);
             
-            // Create corresponding subdirectory
             Directory.CreateDirectory(targetSubDir);
             
-            // Copy texture files in subdirectory
             foreach (string pattern in textureExtensions)
             {
                 string[] textureFiles = Directory.GetFiles(subDir, pattern, SearchOption.AllDirectories);
@@ -828,7 +800,6 @@ public class MeshyBridge : MonoBehaviour
                     string relativePath = Path.GetRelativePath(subDir, textureFile);
                     string targetPath = Path.Combine(targetSubDir, relativePath);
                     
-                    // Ensure target directory exists
                     Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
                     
                     File.Copy(textureFile, targetPath, true);
@@ -840,7 +811,6 @@ public class MeshyBridge : MonoBehaviour
 
     private void FixMaterialTextureReferences(GameObject fbxObject, string modelDir)
     {
-        // Get all Renderer components from FBX object
         Renderer[] renderers = fbxObject.GetComponentsInChildren<Renderer>();
         
         foreach (Renderer renderer in renderers)
@@ -852,10 +822,8 @@ public class MeshyBridge : MonoBehaviour
                 Material material = materials[i];
                 if (material != null)
                 {
-                    // Check material's main texture
                     if (material.mainTexture == null)
                     {
-                        // Try to find corresponding texture based on material name
                         string textureName = material.name;
                         Texture2D foundTexture = FindTextureInDirectory(modelDir, textureName);
                         
@@ -866,7 +834,6 @@ public class MeshyBridge : MonoBehaviour
                         }
                         else
                         {
-                            // If no corresponding texture found, try to find the first available texture
                             Texture2D firstTexture = FindFirstTextureInDirectory(modelDir);
                             if (firstTexture != null)
                             {
@@ -876,7 +843,6 @@ public class MeshyBridge : MonoBehaviour
                         }
                     }
                     
-                    // Check other common texture properties
                     CheckAndAssignTexture(material, "_BumpMap", modelDir, "normal", "Normal");
                     CheckAndAssignTexture(material, "_MetallicGlossMap", modelDir, "metallic", "Metallic");
                     CheckAndAssignTexture(material, "_OcclusionMap", modelDir, "occlusion", "AO");
@@ -956,32 +922,27 @@ public class MeshyBridge : MonoBehaviour
         }
     }
 
-    // 将这个方法移到类内部
     private void CreateAnimatorControllerForMultipleClips(GameObject sceneObject, string modelPath)
     {
         var clips = AssetDatabase.LoadAllAssetsAtPath(modelPath).OfType<AnimationClip>().ToArray();
         if (clips.Length > 1)
         {
-            // 创建AnimatorController来管理多个动画
             string controllerPath = modelPath.Replace(Path.GetExtension(modelPath), "_Controller.controller");
             
             AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
             
-            // 为每个动画clip创建状态
             for (int i = 0; i < clips.Length; i++)
             {
                 var clip = clips[i];
                 var state = controller.layers[0].stateMachine.AddState(clip.name);
                 state.motion = clip;
                 
-                // 设置第一个动画为默认状态
                 if (i == 0)
                 {
                     controller.layers[0].stateMachine.defaultState = state;
                 }
             }
             
-            // 应用controller到animator
             var animator = sceneObject.GetComponent<Animator>();
             if (animator != null)
             {

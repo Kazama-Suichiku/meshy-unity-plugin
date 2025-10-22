@@ -101,7 +101,6 @@ namespace Meshy
                 string modelUrl = null;
                 string thumbnailUrl = null;
 
-                // 从多个来源尝试获取名称
                 if (modelData["name"] != null && !string.IsNullOrWhiteSpace(modelData["name"].ToString()))
                 {
                     displayName = modelData["name"].ToString();
@@ -119,7 +118,6 @@ namespace Meshy
                     displayName = modelData["args"]["texture"]["prompt"].ToString();
                 }
 
-                // 如果没有找到名称，使用任务类型和ID
                 if (string.IsNullOrEmpty(displayName))
                 {
                     if (modelData["taskType"] != null)
@@ -136,18 +134,15 @@ namespace Meshy
                     displayName = $"{taskType.Substring(0, 1).ToUpper()}{taskType.Substring(1)}_{id.Substring(0, 8)}";
                 }
 
-                // 截断过长的名称
                 if (displayName.Length > 30)
                 {
                     displayName = displayName.Substring(0, 27) + "...";
                 }
 
-                // 尝试从result字段获取缩略图和模型URL
                 if (modelData["result"] != null && modelData["result"].Type != JTokenType.Null)
                 {
                     var result = modelData["result"] as JObject;
 
-                    // 先尝试获取缩略图URL
                     if (result["previewUrl"] != null && !string.IsNullOrEmpty(result["previewUrl"].ToString()))
                     {
                         thumbnailUrl = result["previewUrl"].ToString();
@@ -172,7 +167,6 @@ namespace Meshy
                         }
                     }
 
-                    // 检查stylize字段
                     else if (result["stylize"] != null && result["stylize"].Type != JTokenType.Null)
                     {
                         var stylizeData = result["stylize"] as JObject;
@@ -198,7 +192,6 @@ namespace Meshy
                     }
                 }
 
-                // 如果没有从result获取到，尝试从args获取
                 if (string.IsNullOrEmpty(modelUrl) && modelData["args"] != null && modelData["args"].Type != JTokenType.Null)
                 {
                     var args = modelData["args"] as JObject;
@@ -286,7 +279,6 @@ namespace Meshy
 
                 model.Phase = modelData["phase"]?.ToString() ?? "unknown";
 
-                // 调试输出
                 Debug.Log($"Parsed model: ID={id}, Name={displayName}, ThumbnailURL={thumbnailUrl}, ModelURL={modelUrl}");
 
                 return model;
@@ -308,7 +300,6 @@ namespace Meshy
 
             var thumbnailPath = Path.Combine(thumbnailDir, $"{model.Id}.jpeg");
 
-            // 如果文件已存在，直接使用
             if (File.Exists(thumbnailPath) && new FileInfo(thumbnailPath).Length > 0)
             {
                 model.ThumbnailPath = thumbnailPath;
@@ -401,7 +392,6 @@ namespace Meshy
 
             if (string.IsNullOrEmpty(model.ModelUrl))
             {
-                // 尝试构建下载URL
                 string downloadUrl = $"https://api.meshy.ai/web/v2/tasks/{model.Id}/download?type=model";
                 Debug.Log($"Model URL is empty, trying to use: {downloadUrl}");
                 model.ModelUrl = downloadUrl;
@@ -496,7 +486,6 @@ namespace Meshy
                 EditorWindow.GetWindow<APIKeyWindow>().Repaint();
             }
         }
-        // 将这两个方法移到类的内部
         private void ClearThumbnailCache()
         {
             foreach (var texture in thumbnailCache.Values)
@@ -508,18 +497,15 @@ namespace Meshy
 
         public void DrawMyAssetsPanel()
         {
-            // 创建通用字体样式
             var commonLabelStyle = new GUIStyle(EditorStyles.label) { fontSize = 14 };
             var commonBoldStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 14 };
             var commonButtonStyle = new GUIStyle(GUI.skin.button) { fontSize = 14 };
 
-            // 显示加载状态
             if (isLoading)
             {
                 EditorGUILayout.HelpBox("Loading your assets...", MessageType.Info);
             }
 
-            // 刷新按钮
             EditorGUILayout.Space(5);
             EditorGUILayout.BeginHorizontal();
 
@@ -534,7 +520,6 @@ namespace Meshy
 
             EditorGUILayout.Space(5);
 
-            // 分页控制
             EditorGUILayout.BeginHorizontal();
             GUI.enabled = currentPage > 1;
             if (GUILayout.Button("Prev Page", commonButtonStyle, GUILayout.Height(35)))
@@ -551,7 +536,6 @@ namespace Meshy
             GUI.enabled = true;
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(5);
-            // 资产列表
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
             if (isLoading)
             {
@@ -571,12 +555,10 @@ namespace Meshy
             EditorGUILayout.EndScrollView();
         }
 
-        // 添加缺失的DrawAssetCard方法
         private void DrawAssetCard(MeshyModel model)
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-            // 缩略图
             if (thumbnailCache.ContainsKey(model.Id))
             {
                 var texture = thumbnailCache[model.Id];
@@ -606,21 +588,18 @@ namespace Meshy
                 LoadThumbnail(model);
             }
 
-            // Prompt信息
             EditorGUILayout.BeginHorizontal();
             GUILayout.Label(EditorGUIUtility.IconContent("d_SceneViewTools"), GUILayout.Width(20));
             EditorGUILayout.LabelField("Prompt:", GUILayout.Width(50));
             EditorGUILayout.LabelField(model.Name, EditorStyles.wordWrappedLabel);
             EditorGUILayout.EndHorizontal();
 
-            // 创建时间
             EditorGUILayout.BeginHorizontal();
             GUILayout.Label(EditorGUIUtility.IconContent("d_SceneViewTools"), GUILayout.Width(20));
             EditorGUILayout.LabelField("Created:", GUILayout.Width(50));
             EditorGUILayout.LabelField(model.CreatedAt.ToString("yyyy-MM-dd HH:mm"));
             EditorGUILayout.EndHorizontal();
 
-            // 导入按钮
             if (GUILayout.Button(new GUIContent("Import Model", EditorGUIUtility.IconContent("Import").image),
                 GUILayout.Height(30)))
             {

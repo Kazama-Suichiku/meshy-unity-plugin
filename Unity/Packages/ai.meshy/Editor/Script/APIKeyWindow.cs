@@ -14,8 +14,8 @@ using System.Linq;
 namespace Meshy
 {
     public class MeshyModel
-    {
-        public string Id { get; set; }  // 改为 get; set;
+    {
+        public string Id { get; set; }
         public string Name { get; set; }
         public string Author { get; set; }
         public string ThumbnailUrl { get; set; }
@@ -23,9 +23,9 @@ namespace Meshy
         public string ThumbnailPath { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public int Downloads { get; set; }  // 改名以匹配My Assets.cs
+        public int Downloads { get; set; }
         public string ResultId { get; set; }
-        public string Phase { get; set; }  // 添加Phase属性
+        public string Phase { get; set; }
 
         public MeshyModel(string id, string name, string author, string thumbnailUrl, string modelUrl, DateTime createdAt, DateTime updatedAt, int downloadCount, string resultId)
         {
@@ -48,8 +48,8 @@ namespace Meshy
 
     public enum SearchContext
     {
-        prompt,     // 只搜索资产 prompt
-        author        // 只搜索名字
+        prompt,
+        author
     }
 
     public class MeshyApi : IDisposable
@@ -61,11 +61,10 @@ namespace Meshy
         {
             _httpClient = new HttpClient
             {
-                Timeout = TimeSpan.FromSeconds(30)
-            };
-            
-            // 添加 API Key 到请求头
-            if (!string.IsNullOrEmpty(apiKey))
+                Timeout = TimeSpan.FromSeconds(30)
+            };
+            
+            if (!string.IsNullOrEmpty(apiKey))
             {
                 _httpClient.DefaultRequestHeaders.Authorization = 
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
@@ -78,11 +77,9 @@ namespace Meshy
             }
         }
 
-        public async Task<Dictionary<string, MeshyModel>> FetchModelsAsync(int page = 1, 
-            int pageSize = 24, string searchQuery = "", string sortBy = "-created_at", SearchContext context = SearchContext.prompt)
-        {
-  
-            // 构建基础URL和参数
+        public async Task<Dictionary<string, MeshyModel>> FetchModelsAsync(int page = 1, 
+            int pageSize = 24, string searchQuery = "", string sortBy = "-created_at", SearchContext context = SearchContext.prompt)
+        {
             var baseUrl = "https://api.meshy.ai/plugin/v1/showcases";
             var queryParams = new Dictionary<string, string>
             {
@@ -92,7 +89,6 @@ namespace Meshy
                 ["source"] = "unity"
             };
 
-            // 根据搜索上下文添加不同的搜索参数
             if (!string.IsNullOrEmpty(searchQuery))
             {
                 switch (context)
@@ -106,38 +102,33 @@ namespace Meshy
                 }
             }
 
-            // 构建完整的URL
             var url = baseUrl + "?" + string.Join("&", queryParams.Select(p => $"{p.Key}={Uri.EscapeDataString(p.Value)}"));
             
             try
             {
                 var response = await _httpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
-                
-                var json = await response.Content.ReadAsStringAsync();
-                
-                // 输出原始JSON以便调试
-                Debug.Log($"API Response: {json.Substring(0, Math.Min(500, json.Length))}...");
-                
-                // 使用JObject解析JSON以便更灵活地处理
-                var jsonObj = JObject.Parse(json);
+                
+                var json = await response.Content.ReadAsStringAsync();
+                
+                Debug.Log($"API Response: {json.Substring(0, Math.Min(500, json.Length))}...");
+                
+                var jsonObj = JObject.Parse(json);
                 var resultArray = jsonObj["result"] as JArray;
                 
                 var models = new Dictionary<string, MeshyModel>();
                 
                 if (resultArray != null)
-                {
-                    foreach (JObject modelData in resultArray)
-                    {
-                        // 使用字符串处理日期，而不是直接解析
-                        DateTime createdAt = DateTime.UtcNow; // 默认使用当前时间
-                        
-                        try
-                        {
-                            if (modelData["createdAt"] != null)
-                            {
-                                // 尝试将日期字符串转换为DateTime
-                                if (DateTime.TryParse(modelData["createdAt"].ToString(), out var date))
+                {
+                    foreach (JObject modelData in resultArray)
+                    {
+                        DateTime createdAt = DateTime.UtcNow;
+                        
+                        try
+                        {
+                            if (modelData["createdAt"] != null)
+                            {
+                                if (DateTime.TryParse(modelData["createdAt"].ToString(), out var date))
                                 {
                                     createdAt = date;
                                 }
@@ -145,31 +136,27 @@ namespace Meshy
                         }
                         catch (Exception ex)
                         {
-                            Debug.LogWarning($"Failed to parse date for model {modelData["id"]}: {ex.Message}");
-                        }
-                        
-                        // 获取模型名称 - 使用类似Python代码的逻辑
-                        string displayName = "";
-                        
-                        // 从name字段获取名称
-                        if (modelData["name"] != null && !string.IsNullOrWhiteSpace(modelData["name"].ToString()))
+                            Debug.LogWarning($"Failed to parse date for model {modelData["id"]}: {ex.Message}");
+                        }
+                        
+                        string displayName = "";
+                        
+                        if (modelData["name"] != null && !string.IsNullOrWhiteSpace(modelData["name"].ToString()))
                         {
-                            displayName = modelData["name"].ToString();
-                        }
-                        
-                        // 如果名称为空，尝试从draft的prompt中获取
-                        if (string.IsNullOrEmpty(displayName))
+                            displayName = modelData["name"].ToString();
+                        }
+                        
+                        if (string.IsNullOrEmpty(displayName))
                         {
                             try
                             {
                                 if (modelData["args"] != null && 
                                     modelData["args"]["draft"] != null && 
                                     modelData["args"]["draft"]["prompt"] != null)
-                                {
-                                    string prompt = modelData["args"]["draft"]["prompt"].ToString();
-                                    
-                                    // 如果prompt长度超过12个字符，截取前10个字符并添加省略号
-                                    if (prompt.Length > 12)
+                                {
+                                    string prompt = modelData["args"]["draft"]["prompt"].ToString();
+                                    
+                                    if (prompt.Length > 12)
                                     {
                                         displayName = prompt.Substring(0, 10) + "...";
                                     }
@@ -181,28 +168,26 @@ namespace Meshy
                             }
                             catch (Exception ex)
                             {
-                                Debug.LogWarning($"Failed to get prompt for model {modelData["id"]}: {ex.Message}");
-                            }
-                        }
-                        
-                        // 如果经过上述处理仍然没有名称，使用"Untitled"作为默认名称
-                        if (string.IsNullOrEmpty(displayName))
+                                Debug.LogWarning($"Failed to get prompt for model {modelData["id"]}: {ex.Message}");
+                            }
+                        }
+                        
+                        if (string.IsNullOrEmpty(displayName))
                         {
-                            displayName = "Untitled";
-                        }
-                        
-                        // 调试输出模型数据
-                        Debug.Log($"Model data: ID={modelData["id"]}, Processed Name={displayName}, Author={modelData["author"]}");
-                        
-                        var model = new MeshyModel(
-                            modelData["id"].ToString(),
-                            displayName,  // 使用处理后的名称
-                            modelData["author"]?.ToString() ?? "Unknown",
+                            displayName = "Untitled";
+                        }
+                        
+                        Debug.Log($"Model data: ID={modelData["id"]}, Processed Name={displayName}, Author={modelData["author"]}");
+                        
+                        var model = new MeshyModel(
+                            modelData["id"].ToString(),
+                            displayName,
+                            modelData["author"]?.ToString() ?? "Unknown",
                             modelData["thumbnailUrl"]?.ToString(),
-                            modelData["modelUrl"]?.ToString(),
-                            createdAt,
-                            createdAt, // 如果没有updatedAt，使用createdAt
-                            modelData["downloadCount"] != null ? (int)modelData["downloadCount"] : 0,
+                            modelData["modelUrl"]?.ToString(),
+                            createdAt,
+                            createdAt,
+                            modelData["downloadCount"] != null ? (int)modelData["downloadCount"] : 0,
                             modelData["resultId"]?.ToString() ?? modelData["id"].ToString()
                         );
                         
@@ -291,14 +276,13 @@ namespace Meshy
         public string name { get; set; }
         public string author { get; set; }
         public string thumbnailUrl { get; set; }
-        public string modelUrl { get; set; }
-        public object createdAt { get; set; } // 改为object类型
-        public object updatedAt { get; set; } // 改为object类型
-        public int downloadCount { get; set; }
-    }
-    
-    // 修正响应类结构
-    public class UserInfoResponse
+        public string modelUrl { get; set; }
+        public object createdAt { get; set; }
+        public object updatedAt { get; set; }
+        public int downloadCount { get; set; }
+    }
+    
+    public class UserInfoResponse
     {
         public UserInfoResult result { get; set; }
     }
@@ -345,9 +329,9 @@ namespace Meshy
         private int pageNum = 1;
         private bool hasNextPage = false;
         private bool isLoading = false;
-        private Dictionary<string, MeshyModel> searchResults = new Dictionary<string, MeshyModel>();
-        private string sortBy = "-created_at";
-        private SearchContext searchContext = SearchContext.prompt; // 默认搜索 prompt
+        private Dictionary<string, MeshyModel> searchResults = new Dictionary<string, MeshyModel>();
+        private string sortBy = "-created_at";
+        private SearchContext searchContext = SearchContext.prompt;
         private MyAssetsManager myAssetsManager;
 
         private readonly string[] sortOptions = new[]
@@ -362,44 +346,41 @@ namespace Meshy
             "Trending", 
             "Most Downloaded"
         };
-        private int selectedTab = 0;
-        private MeshyApi _meshyApi; 
+        private int selectedTab = 0;
+        private MeshyApi _meshyApi; 
 
-        [MenuItem("Meshy/Meshy For Unity")]
-        public static void ShowMeshyWindow()
-        {
-            APIKeyWindow wnd = GetWindow<APIKeyWindow>();
-            wnd.titleContent = new GUIContent("Meshy For Unity ");
-            wnd.titleContent.image = Resources.Load<Texture>("Meshy_Icon_64");
-            wnd.APIKey = EditorPrefs.HasKey(API_KEY_FIELD) ? EditorPrefs.GetString(API_KEY_FIELD) : "";
-        }
+        [MenuItem("Meshy/Meshy For Unity")]
+        public static void ShowMeshyWindow()
+        {
+            APIKeyWindow wnd = GetWindow<APIKeyWindow>();
+            wnd.titleContent = new GUIContent("Meshy For Unity ");
+            wnd.titleContent.image = Resources.Load<Texture>("Meshy_Icon_64");
+            wnd.APIKey = EditorPrefs.HasKey(API_KEY_FIELD) ? EditorPrefs.GetString(API_KEY_FIELD) : "";
+        }
 
-        private void OnGUI()
-        {   
-            // 创建通用字体样式
+        private void OnGUI()
+        {
             var commonLabelStyle = new GUIStyle(EditorStyles.label) { fontSize = 14 };
             var commonBoldStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 14 };
             var commonButtonStyle = new GUIStyle(GUI.skin.button) { fontSize = 14 };
             var commonTextFieldStyle = new GUIStyle(EditorStyles.textField) { fontSize = 14 };
             var commonPopupStyle = new GUIStyle(EditorStyles.popup) { fontSize = 14 };
 
-            // 设置工具栏样式
             var toolbarStyle = new GUIStyle(GUI.skin.button)
             {
                 fontSize = 14,
-                fixedHeight = 35,  // 增加高度
-                margin = new RectOffset(0, 0, 0, 0),  // 移除外边距
-                padding = new RectOffset(10, 10, 10, 10),  // 调整内边距
-                border = new RectOffset(1, 1, 1, 1),  // 最小化边框
-                alignment = TextAnchor.MiddleCenter  // 确保文本居中
+                fixedHeight = 35,
+                margin = new RectOffset(0, 0, 0, 0),
+                padding = new RectOffset(10, 10, 10, 10),
+                border = new RectOffset(1, 1, 1, 1),
+                alignment = TextAnchor.MiddleCenter
             };
             selectedTab = GUILayout.Toolbar(selectedTab, new string[] { "Meshy Login", "Assets Browser", "My Assets" }, toolbarStyle);
             EditorGUILayout.Space(25);
-            // 内容区域开始
             EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
             {
                 padding = new RectOffset(10, 10, 10, 10),
-                margin = new RectOffset(5, 5, 0, 5)  // 调整上边距为0
+                margin = new RectOffset(5, 5, 0, 5)
             });
             switch (selectedTab)
             {
@@ -492,16 +473,13 @@ namespace Meshy
             }
         }
 
-        private void DrawAssetsBrowser()
-        {
-            
-            // 显示加载状态
-            if (isLoading)
+        private void DrawAssetsBrowser()
+        {
+            if (isLoading)
             {
-                EditorGUILayout.HelpBox("Loading models and thumbnails...", MessageType.Info);
-            }
-            
-            // Search and Sort Controls
+                EditorGUILayout.HelpBox("Loading models and thumbnails...", MessageType.Info);
+            }
+            
             EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
             {
                 padding = new RectOffset(15, 15, 10, 10),
@@ -517,7 +495,6 @@ namespace Meshy
             {
                 fontSize = 14
             };
-            // 搜索输入框
             EditorGUILayout.BeginHorizontal(GUILayout.Height(35));
             EditorGUILayout.LabelField("Search:", labelStyle, GUILayout.Width(70));
             searchQuery = EditorGUILayout.TextField(searchQuery, textFieldStyle, GUILayout.ExpandWidth(true));
@@ -525,7 +502,6 @@ namespace Meshy
             
             EditorGUILayout.Space(10);
             
-            // 搜索类型
             EditorGUILayout.BeginHorizontal(GUILayout.Height(35));
             EditorGUILayout.LabelField("Search by:", labelStyle, GUILayout.Width(70));
             var searchContextRect = EditorGUILayout.GetControlRect(GUILayout.ExpandWidth(true));
@@ -535,7 +511,6 @@ namespace Meshy
             
             EditorGUILayout.Space(10);
             
-            // 排序方式
             EditorGUILayout.BeginHorizontal(GUILayout.Height(35));
             EditorGUILayout.LabelField("Sort by:", labelStyle, GUILayout.Width(70));
             var sortRect = EditorGUILayout.GetControlRect(GUILayout.ExpandWidth(true));
@@ -546,7 +521,6 @@ namespace Meshy
 
             EditorGUILayout.Space(15);
             
-            // 搜索按钮
             var buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 14 };
             if (GUILayout.Button("Search", buttonStyle, GUILayout.Height(35)))
             {
@@ -556,9 +530,8 @@ namespace Meshy
             
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space(5);
-            
-            // Pagination Controls
-            EditorGUILayout.BeginHorizontal();
+            
+            EditorGUILayout.BeginHorizontal();
             GUI.enabled = pageNum > 1;
             if (GUILayout.Button("Prev Page", GUILayout.Height(35)))
             {
@@ -571,11 +544,10 @@ namespace Meshy
                 pageNum++;
                 SearchModels();
             }
-            GUI.enabled = true;
-            EditorGUILayout.EndHorizontal();
-            
-            // Model List
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            GUI.enabled = true;
+            EditorGUILayout.EndHorizontal();
+            
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
             if (isLoading)
             {
                 EditorGUILayout.HelpBox("Loading models...", MessageType.Info);
@@ -594,86 +566,74 @@ namespace Meshy
             EditorGUILayout.EndScrollView();
         }
 
-        private void DrawModelCard(MeshyModel model)
-        {
-            // 使用更明显的边框样式
-            GUIStyle cardStyle = new GUIStyle(EditorStyles.helpBox);
+        private void DrawModelCard(MeshyModel model)
+        {
+            GUIStyle cardStyle = new GUIStyle(EditorStyles.helpBox);
             cardStyle.margin = new RectOffset(5, 5, 5, 5);
             cardStyle.padding = new RectOffset(10, 10, 10, 10);
-            
-            EditorGUILayout.BeginVertical(cardStyle);
-            
-            // 缩略图 - 放在最上方
-            if (thumbnailCache.ContainsKey(model.Id) && thumbnailCache[model.Id] != null)
-            {
-                var texture = thumbnailCache[model.Id];
-                float aspectRatio = (float)texture.width / texture.height;
-                float maxWidth = EditorGUIUtility.currentViewWidth - 40; // 留出边距
-                float height = Mathf.Min(150, texture.height);
-                float width = Mathf.Min(maxWidth, height * aspectRatio);
-                
-                // 居中显示缩略图
-                EditorGUILayout.BeginHorizontal();
+            
+            EditorGUILayout.BeginVertical(cardStyle);
+            
+            if (thumbnailCache.ContainsKey(model.Id) && thumbnailCache[model.Id] != null)
+            {
+                var texture = thumbnailCache[model.Id];
+                float aspectRatio = (float)texture.width / texture.height;
+                float maxWidth = EditorGUIUtility.currentViewWidth - 40;
+                float height = Mathf.Min(150, texture.height);
+                float width = Mathf.Min(maxWidth, height * aspectRatio);
+                
+                EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(texture, GUILayout.Width(width), GUILayout.Height(height));
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
-            }
-            else
-            {
-                // 显示占位符
-                EditorGUILayout.BeginHorizontal();
+            }
+            else
+            {
+                EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.HelpBox("Loading thumbnail...", MessageType.Info, true);
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-                
-                // 尝试加载缩略图
-                if (!string.IsNullOrEmpty(model.ThumbnailPath))
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+                
+                if (!string.IsNullOrEmpty(model.ThumbnailPath))
                 {
                     LoadThumbnail(model);
-                }
-            }
-            
-            // 模型信息区域
-            EditorGUILayout.BeginVertical();
-            
-            // 模型名称图标和名称
-            EditorGUILayout.BeginHorizontal();
+                }
+            }
+            
+            EditorGUILayout.BeginVertical();
+            
+            EditorGUILayout.BeginHorizontal();
             GUILayout.Label(EditorGUIUtility.IconContent("d_Prefab Icon"), GUILayout.Width(20), GUILayout.Height(20));
-            EditorGUILayout.LabelField($"Model Name: {model.Name}", EditorStyles.boldLabel);
-            EditorGUILayout.EndHorizontal();
-            
-            // 作者信息
-            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField($"Model Name: {model.Name}", EditorStyles.boldLabel);
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.BeginHorizontal();
             GUILayout.Label(EditorGUIUtility.IconContent("d_UnityEditor.InspectorWindow"), GUILayout.Width(20), GUILayout.Height(20));
             EditorGUILayout.LabelField($"Author: {model.Author}");
-            EditorGUILayout.EndHorizontal();
-            
-            EditorGUILayout.EndVertical();
-            
-            // 按钮区域 - 使用水平布局
-            EditorGUILayout.Space(5);
-            EditorGUILayout.BeginHorizontal();
-            
-            // 导入按钮 - 使用 "Import" 图标
-            if (GUILayout.Button(new GUIContent("Import Model", EditorGUIUtility.IconContent("Import").image), GUILayout.Height(30)))
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.EndVertical();
+            
+            EditorGUILayout.Space(5);
+            EditorGUILayout.BeginHorizontal();
+            
+            if (GUILayout.Button(new GUIContent("Import Model", EditorGUIUtility.IconContent("Import").image), GUILayout.Height(30)))
             {
                 ImportModel(model);
-            }
-            var originalBackgroundColor = GUI.backgroundColor;
+            }
+            var originalBackgroundColor = GUI.backgroundColor;
             GUI.backgroundColor = new Color(197f/255f, 249f/255f, 85f/255f);
-            // 查看按钮 - 使用 "ViewToolZoom" 图标
-            if (GUILayout.Button(new GUIContent("View on Meshy", EditorGUIUtility.IconContent("ViewToolZoom").image), GUILayout.Height(30)))
+            if (GUILayout.Button(new GUIContent("View on Meshy", EditorGUIUtility.IconContent("ViewToolZoom").image), GUILayout.Height(30)))
             {
                 ViewOnMeshy(model);
             }
-            GUI.backgroundColor = originalBackgroundColor;
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.EndVertical();
-            
-            // 添加间隔
-            EditorGUILayout.Space(10);
+            GUI.backgroundColor = originalBackgroundColor;
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+            
+            EditorGUILayout.Space(10);
         }
 
         private async void LoadThumbnail(MeshyModel model)
@@ -684,23 +644,21 @@ namespace Meshy
                 return;
             }
 
-            try
-            {
-                // 检查缓存中是否已存在
-                if (thumbnailCache.ContainsKey(model.Id) && thumbnailCache[model.Id] != null)
-                    return;
-                
-                // 创建新的纹理并加载图像
-                var texture = new Texture2D(2, 2);
+            try
+            {
+                if (thumbnailCache.ContainsKey(model.Id) && thumbnailCache[model.Id] != null)
+                    return;
+                
+                var texture = new Texture2D(2, 2);
                 var imageData = await File.ReadAllBytesAsync(model.ThumbnailPath);
                 
                 if (imageData != null && imageData.Length > 0)
-                {
-                    texture.LoadImage(imageData);
-                    thumbnailCache[model.Id] = texture;
-                    Repaint(); // 立即更新UI
-                }
-                else
+                {
+                    texture.LoadImage(imageData);
+                    thumbnailCache[model.Id] = texture;
+                    Repaint();
+                }
+                else
                 {
                     Debug.LogWarning($"Empty image data for model: {model.Name}");
                 }
@@ -744,13 +702,11 @@ namespace Meshy
                 searchResults = await _meshyApi.FetchModelsAsync(pageNum, 24, searchQuery, sortBy, searchContext);
                 Debug.Log($"Found {searchResults.Count} models");
                 
-                hasNextPage = searchResults.Count >= 24;
+                hasNextPage = searchResults.Count >= 24;
 
-                // 清除旧的缩略图缓存
-                ClearThumbnailCache();
-                
-                // 加载缩略图
-                if (searchResults.Count > 0)
+                ClearThumbnailCache();
+                
+                if (searchResults.Count > 0)
                 {
                     await _meshyApi.LoadThumbnailsAsync(searchResults.Values);
                     
@@ -801,106 +757,87 @@ namespace Meshy
             isLoading = true;
             Repaint();
 
-            try
-            {
-                // 创建临时目录用于存储下载的模型
-                string tempDir = Path.Combine(Application.temporaryCachePath, "MeshyModels");
+            try
+            {
+                string tempDir = Path.Combine(Application.temporaryCachePath, "MeshyModels");
                 if (!Directory.Exists(tempDir))
                 {
-                    Directory.CreateDirectory(tempDir);
-                }
+                    Directory.CreateDirectory(tempDir);
+                }
 
-                // 处理文件名（防止过长）
-                string safeName = model.Name;
+                string safeName = model.Name;
                 if (safeName.Length > 50)
                 {
                     safeName = safeName.Substring(0, 30) + "..." + safeName.Substring(safeName.Length - 15);
                 }
-                safeName = string.Join("_", safeName.Split(Path.GetInvalidFileNameChars()));
+                safeName = string.Join("_", safeName.Split(Path.GetInvalidFileNameChars()));
 
-                // 检查模型URL的文件扩展名
-                string fileExtension = ".glb"; // 默认为glb
-                Uri uri = new Uri(model.ModelUrl);
+                string fileExtension = ".glb";
+                Uri uri = new Uri(model.ModelUrl);
                 string path = uri.AbsolutePath;
                 if (path.Contains("."))
                 {
-                    fileExtension = Path.GetExtension(path);
-                }
-                
-                // 输出调试信息
-                Debug.Log($"Model URL: {model.ModelUrl}");
-                Debug.Log($"Detected file extension: {fileExtension}");
+                    fileExtension = Path.GetExtension(path);
+                }
+                
+                Debug.Log($"Model URL: {model.ModelUrl}");
+                Debug.Log($"Detected file extension: {fileExtension}");
 
-                // 设置临时文件路径
-                string modelPath = Path.Combine(tempDir, $"{safeName}{fileExtension}");
+                string modelPath = Path.Combine(tempDir, $"{safeName}{fileExtension}");
 
-                // 显示进度条
-                EditorUtility.DisplayProgressBar("Meshy", $"Downloading model: {model.Name}", 0.3f);
+                EditorUtility.DisplayProgressBar("Meshy", $"Downloading model: {model.Name}", 0.3f);
 
-                // 下载模型文件
-                using (var response = await _meshyApi._httpClient.GetAsync(model.ModelUrl))
+                using (var response = await _meshyApi._httpClient.GetAsync(model.ModelUrl))
                 {
                     response.EnsureSuccessStatusCode();
-                    EditorUtility.DisplayProgressBar("Meshy", $"Downloading model: {model.Name}", 0.6f);
-                    
-                    var modelBytes = await response.Content.ReadAsByteArrayAsync();
-                    
-                    // 输出文件大小信息
-                    Debug.Log($"Downloaded model file size: {modelBytes.Length} bytes");
-                    
-                    await File.WriteAllBytesAsync(modelPath, modelBytes);
-                    
-                    EditorUtility.DisplayProgressBar("Meshy", $"Importing model: {model.Name}", 0.9f);
+                    EditorUtility.DisplayProgressBar("Meshy", $"Downloading model: {model.Name}", 0.6f);
+                    
+                    var modelBytes = await response.Content.ReadAsByteArrayAsync();
+                    
+                    Debug.Log($"Downloaded model file size: {modelBytes.Length} bytes");
+                    
+                    await File.WriteAllBytesAsync(modelPath, modelBytes);
+                    
+                    EditorUtility.DisplayProgressBar("Meshy", $"Importing model: {model.Name}", 0.9f);
 
-                    // 确保路径是相对于Assets文件夹的
-                    string assetsPath = "Assets/MeshyModels";
+                    string assetsPath = "Assets/MeshyModels";
                     if (!Directory.Exists(assetsPath))
                     {
                         Directory.CreateDirectory(assetsPath);
                     }
 
-                    string destPath = Path.Combine(assetsPath, $"{safeName}{fileExtension}");
-                    
-                    // 复制文件到Assets目录
-                    File.Copy(modelPath, destPath, true);
-                    
-                    // 输出目标路径信息
-                    Debug.Log($"Model copied to: {destPath}");
-                    
-                    // 刷新资源数据库以识别新文件
-                    AssetDatabase.Refresh();
-                    
-                    // 在主线程中执行导入操作
-                    EditorApplication.delayCall += () =>
+                    string destPath = Path.Combine(assetsPath, $"{safeName}{fileExtension}");
+                    
+                    File.Copy(modelPath, destPath, true);
+                    
+                    Debug.Log($"Model copied to: {destPath}");
+                    
+                    AssetDatabase.Refresh();
+                    
+                    EditorApplication.delayCall += () =>
                     {
-                        try
-                        {
-                            // 加载导入的模型
-                            var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(destPath);
-                            Debug.Log($"Load asset result: {(modelAsset != null ? "success" : "failed")}");
-                            
-                            if (modelAsset != null)
-                            {
-                                // 实例化模型到场景
-                                var modelInstance = PrefabUtility.InstantiatePrefab(modelAsset) as GameObject;
-                                Debug.Log($"Instantiation result: {(modelInstance != null ? "success" : "failed")}");
-                                
-                                if (modelInstance != null)
-                                {
-                                    // 设置模型名称
-                                    modelInstance.name = model.Name;
-                                    
-                                    // 选中新创建的模型
-                                    Selection.activeGameObject = modelInstance;
-                                    
-                                    // 聚焦到模型
-                                    SceneView.lastActiveSceneView?.FrameSelected();
-                                    
-                                    EditorUtility.DisplayDialog("Success", $"Model '{model.Name}' has been successfully imported into the scene", "OK");
+                        try
+                        {
+                            var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(destPath);
+                            Debug.Log($"Load asset result: {(modelAsset != null ? "success" : "failed")}");
+                            
+                            if (modelAsset != null)
+                            {
+                                var modelInstance = PrefabUtility.InstantiatePrefab(modelAsset) as GameObject;
+                                Debug.Log($"Instantiation result: {(modelInstance != null ? "success" : "failed")}");
+                                
+                                if (modelInstance != null)
+                                {
+                                    modelInstance.name = model.Name;
+                                    
+                                    Selection.activeGameObject = modelInstance;
+                                    
+                                    SceneView.lastActiveSceneView?.FrameSelected();
+                                    
+                                    EditorUtility.DisplayDialog("Success", $"Model '{model.Name}' has been successfully imported into the scene", "OK");
                                 }
                                 else
                                 {
-                                    // 尝试直接创建一个新的GameObject并添加模型作为子对象
                                     var container = new GameObject(model.Name);
                                     var instance = GameObject.Instantiate(modelAsset);
                                     instance.transform.SetParent(container.transform);
@@ -913,7 +850,6 @@ namespace Meshy
                             }
                             else
                             {
-                                // 尝试使用其他方法导入
                                 if (fileExtension.ToLower() == ".glb")
                                 {
                                     EditorUtility.DisplayDialog("Warning", "GLB format requires GLTF Importer plugin. Please install 'glTF for Unity' from Package Manager.", "OK");
@@ -968,45 +904,39 @@ namespace Meshy
 
             isLoading = true;
             Repaint();
-            
-            try
-            {
-                // 创建新的HttpClient而不是使用_meshyApi
-                using (var client = new HttpClient())
+            
+            try
+            {
+                using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", APIKey);
-                    client.Timeout = TimeSpan.FromSeconds(30);
-                    
-                    // 获取用户基本信息
-                    var infoResponse = await client.GetAsync("https://api.meshy.ai/web/v1/me/info");
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", APIKey);
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                    
+                    var infoResponse = await client.GetAsync("https://api.meshy.ai/web/v1/me/info");
                     infoResponse.EnsureSuccessStatusCode();
                     var infoJson = await infoResponse.Content.ReadAsStringAsync();
-                    var info = JsonConvert.DeserializeObject<UserInfoResponse>(infoJson);
-                    userName = info.result.nickname;
-                    
-                    // 获取用户等级
-                    var tierResponse = await client.GetAsync("https://api.meshy.ai/web/v1/me/tier");
+                    var info = JsonConvert.DeserializeObject<UserInfoResponse>(infoJson);
+                    userName = info.result.nickname;
+                    
+                    var tierResponse = await client.GetAsync("https://api.meshy.ai/web/v1/me/tier");
                     tierResponse.EnsureSuccessStatusCode();
                     var tierJson = await tierResponse.Content.ReadAsStringAsync();
-                    var tier = JsonConvert.DeserializeObject<UserTierResponse>(tierJson);
-                    userTier = tier.result.tier;
-                    
-                    // 获取用户积分
-                    var creditsResponse = await client.GetAsync("https://api.meshy.ai/web/v1/me/credits");
+                    var tier = JsonConvert.DeserializeObject<UserTierResponse>(tierJson);
+                    userTier = tier.result.tier;
+                    
+                    var creditsResponse = await client.GetAsync("https://api.meshy.ai/web/v1/me/credits");
                     creditsResponse.EnsureSuccessStatusCode();
                     var creditsJson = await creditsResponse.Content.ReadAsStringAsync();
                     var credits = JsonConvert.DeserializeObject<UserCreditsResponse>(creditsJson);
                     creditsRemaining = credits.result.creditBalance
-                        + credits.result.freeCreditBalance
-                        + credits.result.shareCreditEarned;
-                    
-                    // 创建MeshyApi实例用于后续操作
-                    _meshyApi = new MeshyApi(APIKey);
-                    
-                    // 登录成功后自动搜索模型
-                    searchQuery = ""; 
-                    pageNum = 1;     
-                    SearchModels(false);   
+                        + credits.result.freeCreditBalance
+                        + credits.result.shareCreditEarned;
+                    
+                    _meshyApi = new MeshyApi(APIKey);
+                    
+                    searchQuery = ""; 
+                    pageNum = 1;     
+                    SearchModels(false);   
                 }
                 
                 Repaint();
@@ -1020,12 +950,12 @@ namespace Meshy
                     EditorUtility.DisplayDialog("Error", "Invalid API Key. Please check your API key and try again.", "OK");
                 }
                 else
-                {
-                    EditorUtility.DisplayDialog("Error", "Failed to connect to Meshy servers. Please check your internet connection.", "OK");
-                }
-                Logout(); // 登录失败时登出
-            }
-            catch (Exception ex)
+                {
+                    EditorUtility.DisplayDialog("Error", "Failed to connect to Meshy servers. Please check your internet connection.", "OK");
+                }
+                Logout();
+            }
+            catch (Exception ex)
             {
                 Debug.LogError($"Failed to fetch user info: {ex.Message}");
                 EditorUtility.DisplayDialog("Error", $"An error occurred: {ex.Message}", "OK");
@@ -1043,18 +973,16 @@ namespace Meshy
             APIKey = "";
             userName = "";
             userTier = "";
-            creditsRemaining = 0;
-            EditorPrefs.DeleteKey(API_KEY_FIELD);
-            
-            // 清理资源
-            if (_meshyApi != null)
+            creditsRemaining = 0;
+            EditorPrefs.DeleteKey(API_KEY_FIELD);
+            
+            if (_meshyApi != null)
             {
                 _meshyApi.Dispose();
-                _meshyApi = null;
-            }
-            
-            // 清理搜索结果和缩略图
-            searchResults.Clear();
+                _meshyApi = null;
+            }
+            
+            searchResults.Clear();
             ClearThumbnailCache();
             
             Repaint();
@@ -1072,20 +1000,18 @@ namespace Meshy
             }
         }
 
-        private void OnEnable()
-        {
-            // 如果已经有API Key，尝试自动登录
-            if (!string.IsNullOrEmpty(APIKey) && string.IsNullOrEmpty(userTier))
+        private void OnEnable()
+        {
+            if (!string.IsNullOrEmpty(APIKey) && string.IsNullOrEmpty(userTier))
             {
                 FetchUserInfo();
                 myAssetsManager = new MyAssetsManager(APIKey);      
             }
         }
 
-        private void OnDisable()
-        {
-            // 清理资源
-            ClearThumbnailCache();
+        private void OnDisable()
+        {
+            ClearThumbnailCache();
             if (_meshyApi != null)
             {
                 _meshyApi.Dispose();
