@@ -1,100 +1,217 @@
-# Meshy for Unity
+# Meshy Unity Plugin - Bridge Mode
 
-## User Documentation
+This Unity plugin provides a seamless bridge between Meshy.ai's web interface and Unity Editor, allowing you to import generated 3D models directly into your Unity projects with a single click.
 
-### Installation
+## Quick Start
 
-After the installation, we can use Meshy-for-Unity to generate models. Before we continue, please make sure that you have already registered a Meshy account and obtained an API key. If you have not, you can follow the [instruction](https://docs.meshy.ai/api-authentication).
+### 1. Start the Bridge Server
 
-Once you have your API key, we need to configure the API key. In Unity, select "Meshy"->"API Key" to open the window.
+In Unity Editor:
+- Go to **`Meshy > Bridge`** in the menu bar
+- Click **"Run Bridge"** button
+- The server will start listening on port 5326
+- Button will change to **"Bridge ON"** (blue) when running
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/9f78b2b0-6e88-463d-9a22-18f2ac3a1b20"> </p>
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/placeholder-bridge-ui.png" alt="Bridge UI" width="400">
+</p>
 
-Enter the API key obtained from the Meshy website, and click "Save Key" to save the API key to local.
+### 2. Import Models from Meshy.ai
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/68eb2e74-f9f8-4919-8ea1-f222ab691ac4"> </p>
+1. Visit [Meshy.ai](https://www.meshy.ai) in your browser
+2. Create and generate your 3D model (Text to 3D, Image to 3D, etc.)
+3. When the model is ready, click **"Send to Unity"** button on the website
+4. The model will automatically appear in your Unity scene!
 
-Now we are ready to generate!
+### 3. Find Your Imported Models
 
-### Text to Texture
+Imported models are saved to: **`Assets/MeshyImports/`**
 
-After registering a Meshy account and obtaining an API key, we can use Meshy-for-Unity to generate textures. In this tutorial, we will use a T-Rex  model as an example. After installing Meshy-for-Unity, we create a new scene in Unity and add the T-Rex model.
+Each import creates a unique folder containing:
+- Model file (GLB/FBX)
+- Textures and materials
+- AnimatorController (for animated models)
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/5729f066-0a9f-478b-9835-14aac0c6b179"> </p>
+## Supported Features
 
-Now we can start generating textures for our T-Rex model. In the scene, right-click the T-Rex game object and select "Meshy"->"Text To Texture". Or you can select "Meshy"->"Text To Texture" in the toolbar and select the game object by yourself.
+### File Formats
+- **GLB**: Full support with materials and animations
+- **FBX**: Support with texture maps
+- **ZIP**: Automatically extracted and processed
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/9d1b561e-2f73-4635-a224-4a98b3944cd5"> </p>
+### Automatic Processing
+- ✅ Material creation and assignment
+- ✅ Texture import and mapping
+- ✅ Animation clip detection
+- ✅ AnimatorController generation for multi-clip animations
+- ✅ Scene instantiation at origin
 
-In the popup window, you can enter custom prompts to generate textures, and click "Submit Task" to submit the task.
+### Animation Handling
 
-For example:
+When importing GLB files with multiple animation clips:
+- All clips are detected automatically
+- An AnimatorController is created with all animations
+- First animation is set as default state
+- Animator component is automatically attached
 
-* Object Prompt: `a T-Rex`
-* Prompt: `a giant T-Rex, 4k, hdr, highest quality`
-* Art Style: `realistic`
-* Resolution: `4096`
-* Task Name: `T-Rex`
+## How It Works
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/39517e00-8735-4340-92f1-4b3e9bfa8c40"> </p>
+```
+┌─────────────┐         ┌─────────────┐         ┌─────────────┐
+│  Meshy.ai   │ ──────> │   Bridge    │ ──────> │    Unity    │
+│   Website   │  HTTP   │  (Port 5326)│  Import │   Editor    │
+└─────────────┘         └─────────────┘         └─────────────┘
+```
 
-After submitting the task, you can click the "Enable Auto Refreshing Task List" button to get the task list, which records the status of submitted tasks. When a task is completed, you can click the "Download" button to download the model with generated textures. Please note that completed tasks will expire after a few days, and only unexpired tasks will be displayed in the task list.
+1. **Bridge Server**: Runs locally in Unity Editor on port 5326
+2. **Web Request**: Meshy website sends model URL to bridge
+3. **Download**: Bridge downloads model from Meshy servers
+4. **Import**: Model is imported into Unity with full setup
+5. **Scene Addition**: Model appears in active scene automatically
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/5a3a55b0-13b5-4625-94cb-b60217400dd6"> </p>
+## Troubleshooting
 
-After clicking the "Download" button, the model will be automatically downloaded to "Assets"->"Meshy" directory.
+### Bridge Won't Start
+**Problem**: Error when clicking "Run Bridge"
 
-Add the textured model to the scene, and you can see the final model with textures!
+**Solutions**:
+- Check if port 5326 is already in use
+- Close any other applications using this port
+- Restart Unity Editor
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/0556360f-9cf6-4b5a-98e2-b045625ce50b"> </p>
+### Model Not Importing
+**Problem**: Clicked "Send to Unity" but nothing happens
 
-### Text to Model
+**Solutions**:
+- Ensure Bridge is running (button shows "Bridge ON")
+- Check Unity Console for error messages
+- Verify internet connection
+- Try restarting the Bridge server
 
-Besides texturing existing models, we can also generate models with textures from scratch. Select "Meshy"->"Text to Model" to open the window, in which you can enter prompts, task name and select art styles. Click "Submit Task" to submit the task.
+### Missing Textures
+**Problem**: Model imports but has no textures
 
-For example:
+**Solutions**:
+- For FBX: Ensure ZIP contains texture files
+- Check Unity Console for texture import logs
+- Verify `Assets/MeshyImports/` folder has textures
+- Manually reassign textures in Unity if needed
 
-* Prompt: `a legendary battle axe ,fantasy, #Medieval Game Assets#`
-* Task Name: `axe`
-* Art Style: `realistic`
+### Port Already in Use
+**Problem**: "Address already in use" error
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/f5861ed9-9b72-4e01-b821-38486249cbe7"> </p>
+**Solutions**:
+```bash
+# macOS/Linux: Find process using port 5326
+lsof -i :5326
+kill -9 <PID>
 
-After submitting the task, you can click the "Enable Auto Refreshing Task List" button to get the task list, which records the status of submitted tasks. 
+# Windows: Find and kill process
+netstat -ano | findstr :5326
+taskkill /PID <PID> /F
+```
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/f333467f-73c3-4957-8fd8-6f32a934d553"> </p>
+## Technical Details
 
-When a task is completed, you can click the "Download" button to download the model. After clicking the "Download" button, the model will be automatically downloaded to "Assets"->"Meshy" directory just like Text to Texture. 
+### Server Configuration
+- **Port**: 5326 (TCP)
+- **Protocol**: HTTP/1.1
+- **CORS**: Enabled for Meshy domains only
+- **Endpoints**:
+  - `GET /status` - Server health check
+  - `GET /ping` - Connection test
+  - `POST /import` - Model import endpoint
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/2f281984-e039-42eb-9c52-267da58d314a"> </p>
+### Allowed Origins
+For security, the bridge only accepts requests from:
+- `https://www.meshy.ai`
+- `https://app-staging.meshy.ai`
+- `http://localhost:3700` (development)
 
-Add the textured model to the scene, and you can see the final model!
+### Import Directory Structure
+```
+Assets/
+└── MeshyImports/
+    ├── ModelName_20241022_123456/
+    │   ├── model.glb
+    │   ├── texture_basecolor.png
+    │   ├── texture_normal.png
+    │   └── model_Controller.controller
+    └── AnotherModel_20241022_123457/
+        └── ...
+```
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/a1dcb840-7cb9-4e4c-a765-8a2bbedbb648"> </p>
+## API Reference
 
-If you want the model to be more detailed, you can click the "Refine" button on the right side of the task list to generate a model with higher quality. It will submit a new task with the mode "refine" which you can see if you have enabled auto refreshing.
+### Import Request Format
+```json
+{
+  "url": "https://cdn.meshy.ai/...",
+  "format": "glb",
+  "name": "MyModel",
+  "frameRate": 30
+}
+```
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/0b1bdc91-5314-44eb-b329-50a370a8aaec"> </p>
+### Import Response Format
+```json
+{
+  "status": "ok",
+  "message": "File queued for import",
+  "path": "/tmp/Meshy/model_xyz.glb"
+}
+```
 
-Download the refined model in the same way and add it into the scene, you can see that there is a significant improvement in the quality of the model after it is refined. 
+## Performance Considerations
 
-<p align="center"> <img src = "https://github.com/user-attachments/assets/dea4f507-453f-4b6a-849f-b3f2992b0699"> </p>
+- **File Size**: Large models (>100MB) may take longer to download
+- **Texture Resolution**: 4K textures require more memory
+- **Animation Clips**: Multiple clips increase import time
+- **Concurrent Imports**: Process one model at a time for best results
 
-## Developer Documentation
+## Privacy & Security
 
-### Code Design
+- ✅ Server runs **locally** on your machine only
+- ✅ No data sent to external servers (except model download)
+- ✅ Only accepts connections from whitelisted Meshy domains
+- ✅ No API keys or credentials stored
+- ✅ All communication uses HTTPS from Meshy servers
 
-UI Components:
+## Known Limitations
 
-* ``: Entry point for obtaining the API key.
-* `Meshy.TextToModel.MainWindow`: Entry point for the Text to Model feature.
-* `Meshy.TextToTexture.MainWindow`: Entry point for the Text to Texture feature.
+- Can only import one model at a time
+- Requires internet connection for model download
+- FBX texture mapping may need manual adjustment
+- Extremely large files (>500MB) may timeout
 
-Core Functions:
+## Developer Notes
 
-* `SubmitTaskToRemote()`: Submit a task to remote.
-* `AcquireResultsFromRemote()`: Download results of a task from remote.
-* `RefreshTaskList()`: Refresh the status of the task list.
-* `RefineModel()`: Refine a preview task in Text to Model feature.
-* `DeleteTask()`: Delete a task from the task list.
-* `OnInspectorUpdate()`: Timer for auto refreshing.
+### Code Structure
+- `MeshyBridgeWindow`: Editor window UI
+- `MeshyBridge`: TCP server and import queue
+- `ProcessImportRequest`: HTTP request handler
+- `ProcessMeshTransfer`: Format-specific import logic
+
+### Extending the Plugin
+The bridge can be extended to support:
+- Custom import settings
+- Additional file formats
+- Post-import processing
+- Material template system
+
+See `Bridge.cs` for implementation details.
+
+## Support
+
+If you encounter any issues:
+1. Check Unity Console for error messages
+2. Enable Unity Developer Console for detailed logs
+3. Report issues with:
+   - Unity version
+   - Model format and size
+   - Complete error message
+   - Steps to reproduce
+
+---
+
+For more information, visit [Meshy Documentation](https://docs.meshy.ai)
