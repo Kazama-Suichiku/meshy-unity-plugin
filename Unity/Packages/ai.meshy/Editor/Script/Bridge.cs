@@ -217,7 +217,6 @@ public class MeshyBridge : MonoBehaviour
     private readonly string[] allowedOrigins = new string[]
     {
         "https://www.meshy.ai",
-        "https://app-staging.meshy.ai",
         "http://localhost:3700"
     };
 

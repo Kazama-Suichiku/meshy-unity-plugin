@@ -125,7 +125,6 @@ taskkill /PID <PID> /F
 ### Allowed Origins
 For security, the bridge only accepts requests from:
 - `https://www.meshy.ai`
-- `https://app-staging.meshy.ai`
 - `http://localhost:3700` (development)
 
 ### Import Directory Structure
