@@ -731,6 +731,26 @@ public class MeshyBridge : MonoBehaviour
 
             AssetDatabase.ImportAsset(fbxRelativePath, ImportAssetOptions.ForceUpdate);
 
+            ModelImporter importer = AssetImporter.GetAtPath(fbxRelativePath) as ModelImporter;
+            if (importer != null)
+            {
+                // Ensure we are looking for embedded textures
+                bool hasEmbeddedTextures = false;
+                var defaultExternalObjects = importer.GetExternalObjectMap();
+                
+                // Try to extract textures
+                if (importer.ExtractTextures(modelDir))
+                {
+                    Debug.Log($"[Meshy Bridge] Extracted embedded textures to: {modelDir}");
+                    AssetDatabase.Refresh();
+                    AssetDatabase.ImportAsset(fbxRelativePath, ImportAssetOptions.ForceUpdate);
+                }
+                else
+                {
+                    Debug.LogWarning("[Meshy Bridge] No embedded textures extracted or extraction failed.");
+                }
+            }
+
             GameObject importedObject = AssetDatabase.LoadAssetAtPath<GameObject>(fbxRelativePath);
             if (importedObject != null)
             {
@@ -833,11 +853,11 @@ public class MeshyBridge : MonoBehaviour
                         }
                         else
                         {
-                            Texture2D firstTexture = FindFirstTextureInDirectory(modelDir);
-                            if (firstTexture != null)
+                            Texture2D albedoTexture = FindAlbedoTextureInDirectory(modelDir);
+                            if (albedoTexture != null)
                             {
-                                material.mainTexture = firstTexture;
-                                Debug.Log($"[Meshy Bridge] Set default texture for material {material.name}: {firstTexture.name}");
+                                material.mainTexture = albedoTexture;
+                                Debug.Log($"[Meshy Bridge] Set default albedo texture for material {material.name}: {albedoTexture.name}");
                             }
                         }
                     }
@@ -889,17 +909,25 @@ public class MeshyBridge : MonoBehaviour
         return null;
     }
 
-    private Texture2D FindFirstTextureInDirectory(string directory)
+    private Texture2D FindAlbedoTextureInDirectory(string directory)
     {
         string[] textureExtensions = { "*.jpg", "*.jpeg", "*.png", "*.tga", "*.bmp", "*.tiff", "*.tif" };
+        string[] albedoKeywords = { "albedo", "diffuse", "basecolor", "color", "base_color" };
         
         foreach (string pattern in textureExtensions)
         {
             string[] textureFiles = Directory.GetFiles(directory, pattern, SearchOption.TopDirectoryOnly);
-            if (textureFiles.Length > 0)
+            foreach (string textureFile in textureFiles)
             {
-                string relativePath = textureFiles[0].Replace('\\', '/');
-                return AssetDatabase.LoadAssetAtPath<Texture2D>(relativePath);
+                string fileName = Path.GetFileNameWithoutExtension(textureFile).ToLower();
+                foreach (string keyword in albedoKeywords)
+                {
+                    if (fileName.Contains(keyword))
+                    {
+                        string relativePath = textureFile.Replace('\\', '/');
+                        return AssetDatabase.LoadAssetAtPath<Texture2D>(relativePath);
+                    }
+                }
             }
         }
         
