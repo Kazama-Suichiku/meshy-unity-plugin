@@ -1,6 +1,6 @@
 {
   "name": "ai.meshy",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Meshy Unity Plugin - Bridge Edition: Direct 3D model import from Meshy.ai to Unity Editor",
   "unity": "2021.3",
   "dependencies": {
